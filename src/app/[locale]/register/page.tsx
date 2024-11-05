@@ -57,7 +57,6 @@ export default function Register() {
         }
       } catch (err) {
         console.error('Error occurred: ', err);
-        setMessage(`An error occurred: ${err}`);
       }
     }
   }

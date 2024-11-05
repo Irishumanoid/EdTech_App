@@ -50,7 +50,6 @@ export default function Login() {
           }
         } catch (err) {
           console.error('Error occurred: ', err);
-          setMessage(`An error occurred: ${err}`);
         }
       }
     }

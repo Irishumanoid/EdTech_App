@@ -19,7 +19,7 @@ export async function fetchRegistration(email: string, username: string, passwor
         if (error.length !== 0) {
         return {
             statusCode: 403,
-            body: JSON.stringify({ message: `User already exists for ${error.join(', ')}` })
+            body: `User already exists for ${error.join(', ')}`
         };
         }
         //if no errors, register user
@@ -27,7 +27,7 @@ export async function fetchRegistration(email: string, username: string, passwor
         await users.insertOne({email: email, username: username, password: hashedPassword});
         return {
             statusCode: 201,
-            body: JSON.stringify({message: 'Inserted new user'})
+            body: 'Inserted new user'
         }
     } catch (err) {
         console.error('Error:', err);
@@ -44,7 +44,7 @@ export async function verifyLogin(email: string, password: string) {
             await client.close();
             return {
               statusCode: 401,
-              body: JSON.stringify({ message: 'Invalid email or password.' }), 
+              body: 'Invalid email or password.', 
             };
           }
       
@@ -52,7 +52,7 @@ export async function verifyLogin(email: string, password: string) {
               if (err) {
                   return {
                       statusCode: 400,
-                      body: JSON.stringify({message: 'Error comparing passwords'})
+                      body: 'Error comparing passwords',
                   };
               } 
       
@@ -61,7 +61,7 @@ export async function verifyLogin(email: string, password: string) {
               } else {
                   return {
                       statusCode: 401, 
-                      body: JSON.stringify({ message: 'Invalid email or password.' }), 
+                      body: 'Invalid email or password.', 
                   };
               }
           });
