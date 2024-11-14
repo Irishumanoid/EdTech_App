@@ -29,7 +29,9 @@ export const Header: FC<Props> = ({ locale }) => {
           <Link lang={locale} href={`/register`}>
             {t('Register')}
           </Link>
-          <a href=''>{t('Support')}</a>
+          <Link lang={locale} href={`/home`}> 
+            {t('Try_it_out')}
+          </Link>
         </nav>
         <ThemeSwitch />
         <LangSwitcher />

@@ -10,6 +10,7 @@ import NextTopLoader from 'nextjs-toploader'
 import { Header } from './components/Header'
 import './globals.css'
 import Head from 'next/head'
+import ClientWrapper from './ClientWrapper'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -47,40 +48,43 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <body>
-        <ThemeProvider
-          enableSystem
-          attribute='class'
-          defaultTheme='light'
-          themes={[
-            'light',
-            'dark',
-            'instagram',
-            'facebook',
-            'discord',
-            'netflix',
-            'twilight',
-            'reddit'
-          ]}
-        >
-          <NextIntlClientProvider
-            locale={locale}
-            messages={messages as AbstractIntlMessages}
+          <ThemeProvider
+            enableSystem
+            attribute="class"
+            defaultTheme="light"
+            themes={[
+              'light',
+              'dark',
+              'instagram',
+              'facebook',
+              'discord',
+              'netflix',
+              'twilight',
+              'reddit'
+            ]}
           >
-            <NextTopLoader
-              initialPosition={0.08}
-              crawlSpeed={200}
-              height={3}
-              crawl={true}
-              easing='ease'
-              speed={200}
-              shadow='0 0 10px #2299DD,0 0 5px #2299DD'
-              color='var(--primary)'
-              showSpinner={false}
-            />
-            <Header locale={locale} />
-            <main className='mx-auto max-w-screen-2xl'>{children}</main>
-          </NextIntlClientProvider>
-        </ThemeProvider>
+            <NextIntlClientProvider
+              locale={locale}
+              messages={messages as AbstractIntlMessages}
+            >
+              <ClientWrapper>
+                <NextTopLoader
+                  initialPosition={0.08}
+                  crawlSpeed={200}
+                  height={3}
+                  crawl={true}
+                  easing="ease"
+                  speed={200}
+                  shadow="0 0 10px #2299DD,0 0 5px #2299DD"
+                  color="var(--primary)"
+                  showSpinner={false}
+                />
+                <Header locale={locale} />
+                <main className="mx-auto max-w-screen-2xl"></main>
+              {children}
+            </ClientWrapper>
+            </NextIntlClientProvider>
+          </ThemeProvider>
       </body>
     </html>
   )

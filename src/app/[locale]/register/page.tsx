@@ -53,7 +53,7 @@ export default function Register() {
         // make sure it doesn't move on if identical user exists
         setMessage(data.message);
         if (response.ok && !data.message?.toString().includes('User already exists')) { 
-          router.push('/login');
+          router.push('/home');
         }
       } catch (err) {
         console.error('Error occurred: ', err);

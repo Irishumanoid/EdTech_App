@@ -1,0 +1,8 @@
+Generate text for a {contentType} for {childName} and friends {friendsNames}. 
+Make this content tailored to the preferences of {childName}, which are: {childsPreferences} 
+and the preferences of their friends, which are: {friendsPreferences}. 
+The {contentType} should be approximately {numWords} words long and should use vocabulary and events appropriate for 
+{lowerAge} to {upperAge} year old children to teach {childName} vocabulary in the domain {pronoun} is interested in. 
+If story or podcast, use the following plot archetype(s) to control the structure of the generated content: {plotArchetypes}
+{keywordGen} Some additional details to take into consideration include: {otherInfo}. 
+Unless explicitly requested above, don't start the story with "Once Upon a Time". Generate in {language}.
