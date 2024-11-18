@@ -1,7 +1,5 @@
 'use client';
 
-import dotenv from 'dotenv';
-dotenv.config();
 import { useTranslations } from 'next-intl';
 import Button from './components/Button';
 

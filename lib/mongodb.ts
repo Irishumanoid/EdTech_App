@@ -1,8 +1,7 @@
-import config from '../config.json';
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 
-const uri: string = config.MONGODB_URI || '';
+const uri: string = process.env.NEXT_PUBLIC_MONGODB_URI || '';
 const client = new MongoClient(uri);
 
 export const fetchRegistration = async (email: string, username: string, password: string) => {
