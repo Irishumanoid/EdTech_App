@@ -19,7 +19,7 @@ import AudioPlayer from '../components/AudioPlayer';
 export default function Home() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
-    const [inputList, setInputList] = useState([<ChildInfo index={0} onDelete={() => userDelete(0)}/>]);
+    const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
     const [minutes, setMinutes] = useState(1);
     const [ageRange, setAgeRange] = useState([5, 15]);
     const [isAudio, setIsAudio] = useState(false);
@@ -37,7 +37,7 @@ export default function Home() {
         setInputList((prevList) => {
             const updatedList = prevList.filter((_, i) => i !== index);
             return updatedList.map((child, i) =>
-                React.cloneElement(child, { index: i, onDelete: () => userDelete(i) })
+                React.cloneElement(child, { index: i, key: i, onDelete: () => userDelete(i) })
             );
         });
     };
@@ -168,7 +168,7 @@ export default function Home() {
                             </Grid>
                             <Grid size={3}>
                                 <Typography gutterBottom> Generate keywords </Typography>
-                                <Checkbox onChange={e => dispatch(setKeywords(e.target.checked))}/>
+                                <Checkbox onChange={(e) => dispatch(setKeywords(e.target.checked))}/>
                             </Grid>
                         </Grid>
                     </Box>
