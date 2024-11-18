@@ -43,7 +43,7 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
 
     return (
         <div>
-            <Box sx={{ '& > :not(style)': { m: 1 } }}>
+            <Box sx={{ '& > :not(style)': { m: 1 } }} id={`child-info-${index}`}>
                 <TextField
                     id="input-with-icon-textfield"
                     label={index === 0 ? "Child name" : `Friend ${index} name`}
