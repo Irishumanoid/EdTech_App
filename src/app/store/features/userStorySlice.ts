@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface ChildType {
+export interface ChildType {
     name: string;
     pronoun: string;
     preferences: string[];
@@ -8,26 +8,26 @@ interface ChildType {
 
 interface userStoryState {
     users: ChildType[],
-    contentType: string,
+    type: string,
     numMins: number,
-    lowerAge: number,
-    upperAge: number,
+    ageRange: number[],
     plots: string[],
     keywords: boolean,
     otherInfo: string,
-    language: string
+    language: string,
+    requestUuid: string
 }
 
 const initialState: userStoryState = {
     users: [],
-    contentType: '',
+    type: '',
     numMins: 0,
-    lowerAge: 0,
-    upperAge: 0,
+    ageRange: [1, 100],
     plots: [],
     keywords: false,
     otherInfo: '',
-    language: ''
+    language: '',
+    requestUuid: ''
 }
 
 
@@ -56,31 +56,31 @@ const userStorySlice = createSlice({
                 }
             }
         },
-        removeUser: (state, action: PayloadAction<number>) => {
-            const user = state.users[action.payload];
+        updateUsers: (state, action: PayloadAction<{users: ChildType[]}>) => {
+            state.users = action.payload.users;
+        },
+        removeUser: (state, action: PayloadAction<{ index: number }>) => {
+            const user = state.users[action.payload.index];
             if (user) {
-                state.users.splice(action.payload, 1);
+                state.users.splice(action.payload.index, 1);
             }
         },
-        setContentType: (state, action: PayloadAction<string>) => {
-            state.contentType = action.payload;
+        setType: (state, action: PayloadAction<string>) => {
+            state.type = action.payload;
         },
         setNumMins: (state, action: PayloadAction<number>) => {
             state.numMins = action.payload;
         },
-        setLowerAge: (state, action: PayloadAction<number>) => {
-            state.lowerAge = action.payload;
-        },
-        setUpperAge: (state, action: PayloadAction<number>) => {
-            state.upperAge = action.payload;
+        setAgeRange: (state, action: PayloadAction<number[]>) => {
+            state.ageRange = action.payload;
         },
         addPlot: (state, action: PayloadAction<string>) => {
             state.plots.push(action.payload);
         },
-        removePlot: (state, action: PayloadAction<number>) => {
-            const plot = state.plots[action.payload];
+        removePlot: (state, action: PayloadAction<string>) => {
+            const plot = action.payload;
             if (plot) {
-                state.plots.splice(action.payload, 1);
+                state.plots = state.plots.filter(p => p !== plot);
             }
         },
         setKeywords: (state, action: PayloadAction<boolean>) => {
@@ -92,9 +92,12 @@ const userStorySlice = createSlice({
         setLanguage: (state, action: PayloadAction<string>) => {
             state.language = action.payload;
         },
+        setUuid: (state, action: PayloadAction<string>) => {
+            state.requestUuid = action.payload;
+        }
     }
 });
 
 
-export const { addUser, modifyUser, removeUser, setContentType, setNumMins, setLowerAge, setUpperAge, addPlot, removePlot, setKeywords, setOtherInfo, setLanguage } = userStorySlice.actions;
+export const { addUser, modifyUser, updateUsers, removeUser, setType, setNumMins, setAgeRange, addPlot, removePlot, setKeywords, setOtherInfo, setLanguage, setUuid } = userStorySlice.actions;
 export default userStorySlice.reducer;

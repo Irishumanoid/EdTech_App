@@ -1,10 +1,11 @@
+import config from '../config.json';
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcryptjs';
 
-const uri: string = process.env.MONGODB_URI || '';
+const uri: string = config.MONGODB_URI || '';
 const client = new MongoClient(uri);
 
-export async function fetchRegistration(email: string, username: string, password: string) {
+export const fetchRegistration = async (email: string, username: string, password: string) => {
     try {
         client.connect();
         const users = client.db('users').collection('registration_data');
@@ -34,7 +35,7 @@ export async function fetchRegistration(email: string, username: string, passwor
     }
 }
 
-export async function verifyLogin(email: string, password: string) {
+export const verifyLogin = async (email: string, password: string) => {
     try {
         client.connect();
         const users = client.db('users').collection('registration_data');
@@ -70,6 +71,21 @@ export async function verifyLogin(email: string, password: string) {
             statusCode: 200, 
             body: JSON.stringify({ userId: user._id }),
           };  
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
+
+export const addStory = async (text: string, userId?: string) => {
+    try {
+        client.connect();
+        const stories = client.db('users').collection('stories');
+        const out = await stories.insertOne({userId, text});
+        
+        return {
+            statusCode: 201,
+            body: `Inserted new story, ${out}`
+        }
     } catch (err) {
         console.error('Error:', err);
     }

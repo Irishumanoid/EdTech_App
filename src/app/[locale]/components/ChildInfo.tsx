@@ -8,35 +8,46 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import { useState, useEffect } from 'react';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 
 import { useAppDispatch } from  '../../store/hooks';
-import { addUser, modifyUser } from '../../store/features/userStorySlice';
+import { addUser, modifyUser, removeUser } from '../../store/features/userStorySlice';
+import { IconButton } from '@mui/material';
 
 interface ChildInfoProps {
-    index: number
+    index: number;
+    onDelete: (index: number) => void;
 }
 
-export const ChildInfo = ({ index }: ChildInfoProps) => {
+export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
     const [name, setName] = useState('');
     const [pronoun, setPronoun] = useState('');
     const [prefs, setPrefs] = useState('');
 
     const dispatch = useAppDispatch();
-
     useEffect(() => {
         dispatch(addUser({name: '', pronoun: '', preferences: []}));
-    }, [dispatch])
+    }, []);
+
 
     useEffect(() => {
-        dispatch(modifyUser({index, name, pronoun, preferences: prefs.split(',')}))
+        if (name || pronoun || prefs) {
+            dispatch(modifyUser({index: index, name: name, pronoun: pronoun, preferences: prefs.split(',')}));
+        }
     }, [name, pronoun, prefs]);
+
+    const deleteUser = () => {
+        dispatch(removeUser({index}));
+        onDelete(index);
+    }
 
     return (
         <div>
             <Box sx={{ '& > :not(style)': { m: 1 } }}>
                 <TextField
                     id="input-with-icon-textfield"
-                    label="Child name"
+                    label={index === 0 ? "Child name" : `Friend ${index} name`}
+                    sx={{ position: 'relative', top: '30px' }}
                     slotProps={{
                     input: {
                         startAdornment: (
@@ -61,15 +72,24 @@ export const ChildInfo = ({ index }: ChildInfoProps) => {
                     id="standard-multiline-flexible"
                     label="Preferences"
                     multiline
-                    minRows={2}
+                    minRows={4}
                     maxRows={4}
                     variant="standard"
                     onChange={(e) => setPrefs(e.target.value)}
                     sx = {{
                         width:'50%',
-                        backgroundColor:'rgba(0, 0, 0, 0.05)'
+                        backgroundColor:'rgba(0, 0, 0, 0.05)',
+                        position: 'relative', 
+                        top: '20px'
                     }}
                 />   
+                <IconButton 
+                    color="primary" 
+                    aria-label="delete" 
+                    onClick={() => deleteUser()}
+                    sx={{position: 'relative', top: '50px'}}>
+                    <DeleteForeverIcon sx={{color: 'red', fontSize: 30}}/>
+                </IconButton>
             </Box>
         </div>
     );
