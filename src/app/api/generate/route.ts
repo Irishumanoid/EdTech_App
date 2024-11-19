@@ -24,10 +24,7 @@ export const POST = async (request: Request) => {
         }
         const gptPrompt = new GPTPrompt(children, userInfo.type, userInfo.numMins, userInfo.ageRange, userInfo.plots, userInfo.keywords, userInfo.otherInfo, userInfo.language);
 
-        const uuid = await synthesizeLongAudio(gptPrompt);
-
-        const filePath = path.resolve(process.cwd(), 'lib/stories', `${uuid}.txt`);
-        const story = await readFile(filePath);
+        const [uuid, story] = await synthesizeLongAudio(gptPrompt);
         if (story) {
             await addStory(story);
         } else {
