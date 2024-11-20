@@ -3,7 +3,7 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 
 import { useAppDispatch, useAppSelector } from  '../../store/hooks';
-import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, setLanguage, updateUsers, setUuid } from '../../store/features/userStorySlice';
+import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, setLanguage, updateUsers, setVoiceGender, setUuid } from '../../store/features/userStorySlice';
 import Button from '../components/Button';
 import { ChildInfo } from '../components/ChildInfo';
 import { CheckboxGrid } from '../components/CheckboxGrid';
@@ -21,7 +21,7 @@ export default function Home() {
     const user = useAppSelector((state) => state.user);
     const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
     const [minutes, setMinutes] = useState(1);
-    const [ageRange, setAgeRange] = useState([5, 15]);
+    const [ageRange, setAgeRange] = useState([0, 100]);
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
@@ -199,7 +199,7 @@ export default function Home() {
                     <br/>
                     <Grid container spacing={2}>
                         <Grid size={6}>
-                            <TextField sx={{width:'700px'}}
+                            <TextField sx={{width:'640px'}}
                                 id="filled-basic" 
                                 label="Other information" 
                                 variant="filled" 
@@ -218,10 +218,26 @@ export default function Home() {
                                 defaultValue={"English"}
                                 onChange={(e) => dispatch(setLanguage(e.target.value as string))}
                                 >
+                                <MenuItem value="Arabic">Arabic</MenuItem>
                                 <MenuItem value="English">English</MenuItem>
+                                <MenuItem value="French">French</MenuItem>
+                                <MenuItem value="German">German</MenuItem>
+                                <MenuItem value="Japanese">Japanese</MenuItem>
                                 <MenuItem value="Madarin">Mandarin</MenuItem>
                                 <MenuItem value="Spanish">Spanish</MenuItem>
-                                <MenuItem value="French">French</MenuItem>
+                                <MenuItem value="Russian">Russian</MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControl variant="filled" sx={{ m: 1, minWidth: 100 }}>
+                                <InputLabel id="demo-simple-select-filled-label">Voice gender</InputLabel>
+                                <Select
+                                labelId="demo-simple-select-filled-label"
+                                id="demo-simple-select-filled"
+                                defaultValue={"Female"}
+                                onChange={(e) => dispatch(setVoiceGender(e.target.value as string))}
+                                >
+                                <MenuItem value="Female">Female</MenuItem>
+                                <MenuItem value="Male">Male</MenuItem>
                                 </Select>
                             </FormControl>
                         </Grid>

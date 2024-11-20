@@ -24,7 +24,7 @@ export const POST = async (request: Request) => {
         }
         const gptPrompt = new GPTPrompt(children, userInfo.type, userInfo.numMins, userInfo.ageRange, userInfo.plots, userInfo.keywords, userInfo.otherInfo, userInfo.language);
 
-        const [uuid, story] = await synthesizeLongAudio(gptPrompt);
+        const [uuid, story] = await synthesizeLongAudio(gptPrompt, userInfo.voiceGender);
         if (story) {
             await addStory(story);
         } else {

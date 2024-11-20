@@ -15,6 +15,7 @@ interface userStoryState {
     keywords: boolean,
     otherInfo: string,
     language: string,
+    voiceGender: string,
     requestUuid: string
 }
 
@@ -27,6 +28,7 @@ const initialState: userStoryState = {
     keywords: false,
     otherInfo: '',
     language: '',
+    voiceGender: '',
     requestUuid: ''
 }
 
@@ -92,6 +94,9 @@ const userStorySlice = createSlice({
         setLanguage: (state, action: PayloadAction<string>) => {
             state.language = action.payload;
         },
+        setVoiceGender: (state, action: PayloadAction<string>) => {
+            state.voiceGender = action.payload;
+        },
         setUuid: (state, action: PayloadAction<string>) => {
             state.requestUuid = action.payload;
         }
@@ -99,5 +104,5 @@ const userStorySlice = createSlice({
 });
 
 
-export const { addUser, modifyUser, updateUsers, removeUser, setType, setNumMins, setAgeRange, addPlot, removePlot, setKeywords, setOtherInfo, setLanguage, setUuid } = userStorySlice.actions;
+export const { addUser, modifyUser, updateUsers, removeUser, setType, setNumMins, setAgeRange, addPlot, removePlot, setKeywords, setOtherInfo, setLanguage, setVoiceGender, setUuid } = userStorySlice.actions;
 export default userStorySlice.reducer;
