@@ -3,7 +3,6 @@ import { synthesizeLongAudio, readFile, fetchStoryAudio } from '@/lib/gptGen.mjs
 import { Child, GPTPrompt } from '@/lib/promptObjs.mjs';
 import { ChildType } from '../../store/features/userStorySlice';
 import { addStory } from '@/lib/mongodb';
-import path from 'path';
 
 interface ChildInfo {
     users: ChildType[]

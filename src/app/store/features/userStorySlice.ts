@@ -27,8 +27,8 @@ const initialState: userStoryState = {
     plots: [],
     keywords: false,
     otherInfo: '',
-    language: '',
-    voiceGender: '',
+    language: 'English',
+    voiceGender: 'Female',
     requestUuid: ''
 }
 
