@@ -12,8 +12,9 @@ import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, I
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Grid from '@mui/material/Grid2';
-import AudioPlayer from '../components/AudioPlayer';
-
+import AudioPlayer from 'react-h5-audio-player';
+import 'react-h5-audio-player/lib/styles.css';
+import { audioBufferToWav } from '@/lib/utils';
 
 //on submit, add everything to gptprompt object
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
     const [ageRange, setAgeRange] = useState([0, 100]);
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+    const [loading, setLoading] = useState(false);
 
     const genButtonClick = () => {
         const newIndex = inputList.length;
@@ -45,19 +47,28 @@ export default function Home() {
     const handleMinsSliderChange = (event: Event, newValue: number | number[]) => {
         if (typeof newValue === 'number') {
             setMinutes(newValue);
-            dispatch(setNumMins(minutes));
+            dispatch(setNumMins(newValue));
         }
     };
 
     const handleAgeSliderChange = (event: Event, newValue: number | number[]) => {
         if (Array.isArray(newValue)) {
             setAgeRange(newValue as [number, number]);
-            dispatch(setAges(ageRange));
+            dispatch(setAges(newValue));
         }
     };
 
+    const getBlobUrl = (buffer: AudioBuffer) => {
+        const wavBlob = audioBufferToWav(buffer);
+        return URL.createObjectURL(wavBlob);
+    }
+
     //fetch everything from user object and generate story
     const handleUpdate = async () => {
+        setLoading(true);
+        if (isAudio) {
+            setIsAudio(false);
+        }
         const updatedUsers = user.users.filter((curUser) => 
             !(curUser.name === "" && curUser.preferences.length === 0 && curUser.pronoun === "")
         );
@@ -84,6 +95,7 @@ export default function Home() {
                 audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
                     setAudioBuffer(decodedData);
                     setIsAudio(true);
+                    setLoading(false);
                 });
             }
         }
@@ -243,10 +255,18 @@ export default function Home() {
                         </Grid>
                     </Grid>
                     <br/>
-                    <Button rounded size='large' onClick={handleUpdate}> Generate </Button>
+                    <Button 
+                        style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
+                        rounded 
+                        size='large' 
+                        onClick={handleUpdate}> 
+                            Generate 
+                    </Button>
                     <br/>
                     <br/>
-                    {isAudio && <AudioPlayer audioBuffer={audioBuffer}/>}
+                    <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
+                        {isAudio && <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>}
+                    </Box>
                 </Box>  
             </Box>
         </div>

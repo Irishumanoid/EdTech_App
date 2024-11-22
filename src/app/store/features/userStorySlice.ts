@@ -21,8 +21,8 @@ interface userStoryState {
 
 const initialState: userStoryState = {
     users: [],
-    type: '',
-    numMins: 0,
+    type: 'story',
+    numMins: 1,
     ageRange: [1, 100],
     plots: [],
     keywords: false,
