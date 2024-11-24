@@ -46,7 +46,7 @@ export default function Login() {
           // make sure it doesn't move on if user doesn't exist
           console.log(`status code ${ response.status}`);
           if (response.ok && response.status === 200) { 
-            router.push('/home');
+            router.push('/dashboard');
           }
         } catch (err) {
           console.error('Error occurred: ', err);
@@ -69,14 +69,14 @@ export default function Login() {
             textAlign: 'center'
           }}
         >
-          {t('Test')}
+          {t('Login')}
           <div className='py-2 text-center'>
             <TextField id="outlined-basic" label="Email" variant="outlined" onChange={(e) => setEmail(e.target.value)}/>
             <br/>
             <label style={{ color: 'red', fontSize: '12px' }}>{emailError}</label>
           </div>
           <div className='py-2 text-center'>
-            <TextField id="outlined-basic" label="Password" variant="outlined" onChange={(e) => setPassword(e.target.value)}/>
+            <TextField id="outlined-password-input" label="Password" type="password" variant="outlined" onChange={(e) => setPassword(e.target.value)}/>
             <br/>
             <label style={{ color: 'red', fontSize: '12px' }}>{passwordError}</label>
           </div>

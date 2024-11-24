@@ -30,8 +30,9 @@ export default function Register() {
       setEmailError('');
     }
 
-    if (password === '') {
-      setPasswordError('Please enter a valid password');
+    if (password === '' || password.length < 8 || !/[^a-zA-Z0-9\s]/.test(password)) {
+      console.log(`password: ${password}`)
+      setPasswordError('Please enter a valid password of minimum 8 characters with at least 1 special character');
     } else {
       setPasswordError('');
     }
@@ -53,7 +54,7 @@ export default function Register() {
         // make sure it doesn't move on if identical user exists
         setMessage(data.message);
         if (response.ok && !data.message?.toString().includes('User already exists')) { 
-          router.push('/home');
+          router.push('/login');
         }
       } catch (err) {
         console.error('Error occurred: ', err);
@@ -67,7 +68,7 @@ export default function Register() {
       </div>
         <Box
           sx={{
-            height: 500,
+            height: 550,
             backgroundColor: '#f9f9f9',
             padding: '4rem',
             borderRadius: '8px',
@@ -75,7 +76,7 @@ export default function Register() {
             textAlign: 'center'
           }}
         >
-          {t('Test')}
+          {t('Register')}
           <div className='py-2 text-center'>
             <TextField id="outlined-basic" label="Email" variant="outlined" onChange={(e) => setEmail(e.target.value)}/>
             <br/>
@@ -85,12 +86,12 @@ export default function Register() {
             <TextField id="outlined-basic" label="Username" variant="outlined" onChange={(e) => setUsername(e.target.value)}/>
           </div>
           <div className='py-2 text-center'>
-            <TextField id="outlined-basic" label="Password" variant="outlined" onChange={(e) => setPassword(e.target.value)}/>
+            <TextField id="outlined-basic" label="Password" type="password" variant="outlined" onChange={(e) => setPassword(e.target.value)}/>
             <br/>
             <label style={{ color: 'red', fontSize: '12px' }}>{passwordError}</label>
           </div>
           <div className='py-2 text-center'>
-            <TextField id="outlined-basic" label="Confirm Password" variant="outlined" onChange={(e) => setPasswordConf(e.target.value)}/>
+            <TextField id="outlined-basic" label="Confirm Password" type="password" variant="outlined" onChange={(e) => setPasswordConf(e.target.value)}/>
             <br/>
             <label style={{ color: 'red', fontSize: '12px' }}>{passwordConfError}</label>
           </div>

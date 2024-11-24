@@ -11,7 +11,8 @@ export const pathnames = {
   '/': '/',
   '/login': '/login',
   '/register': '/register',
-  '/home': '/home'
+  '/home': '/home',
+  '/dashboard': '/dashboard'
 } satisfies Pathnames<typeof locales>
 
 

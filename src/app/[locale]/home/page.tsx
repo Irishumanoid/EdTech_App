@@ -11,10 +11,12 @@ import { useState } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid2';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import { audioBufferToWav } from '@/lib/utils';
+
 
 //on submit, add everything to gptprompt object
 export default function Home() {
@@ -107,23 +109,24 @@ export default function Home() {
             <br/><br/>
             <Box id="outer"
                 sx={{
-                display: 'flex',          
-                justifyContent: 'center', 
-                alignItems: 'center',     
-                height: '80vh',         
-                padding: 0,               
-            }}>
+                    display: 'flex',
+                    justifyContent: 'flex-start', 
+                    alignItems: 'flex-start',
+                    height: 'auto',
+                    minHeight: '80vh',
+                    padding: 0,
+                }}>
                 <Box id="inner"
-                    sx={{
+                      sx={{
                         width: 1200,
-                        height: 500,
+                        height: 'auto',
                         flexDirection: 'column',
                         backgroundColor: '#f9f9f9',
                         padding: '2rem',
                         borderRadius: '8px',
                         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
                         textAlign: 'center',
-                        overflowY: 'auto',        
+                        overflowY: 'visible',
                     }}>
                     {inputList}
                     <IconButton color="primary" aria-label="add" onClick={() => genButtonClick()} sx={{ fontSize: 20 }}>
@@ -255,13 +258,18 @@ export default function Home() {
                         </Grid>
                     </Grid>
                     <br/>
-                    <Button 
-                        style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
-                        rounded 
-                        size='large' 
-                        onClick={handleUpdate}> 
-                            Generate 
-                    </Button>
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+                        <Button 
+                            style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
+                            rounded 
+                            size='large' 
+                            onClick={handleUpdate}> 
+                                Generate 
+                        </Button>
+                        <Box sx={{ width: 48, height: 48, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                            {loading && <CircularProgress size={40} />}
+                        </Box>
+                    </Box>
                     <br/>
                     <br/>
                     <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
