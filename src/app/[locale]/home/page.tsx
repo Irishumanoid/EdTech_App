@@ -299,8 +299,8 @@ export default function Home() {
                     <br/>
                     {storyText.length !== 1 && storyText.map((sentence, index) => {
                         return (
-                        <div>
-                            <Typography variant="body1" gutterBottom fontSize={22} key={index}> {sentence} </Typography>
+                        <div key={index}>
+                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
                         </div>
                         );
                     })}
