@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { synthesizeLongAudio, readFile, fetchStoryAudio } from '@/lib/gptGen.mjs';
+import { synthesizeLongAudio, fetchStoryAudio } from '@/lib/gptGen.mjs';
 import { Child, GPTPrompt } from '@/lib/promptObjs.mjs';
 import { ChildType } from '../../store/features/userStorySlice';
-import { addStory } from '@/lib/mongodb';
+import { addStory, fetchStory } from '@/lib/mongodb';
 
 interface ChildInfo {
     users: ChildType[]
@@ -25,7 +25,7 @@ export const POST = async (request: Request) => {
 
         const [uuid, story] = await synthesizeLongAudio(gptPrompt, userInfo.voiceGender);
         if (story) {
-            await addStory(story);
+            await addStory(story, uuid as string);
         } else {
             return NextResponse.json({message: 'Text file not found'}, {status: 404});
         }
@@ -40,6 +40,8 @@ export const POST = async (request: Request) => {
 
 export const GET = async (request: Request) => {
     const uuid = request.headers.get('uuid');
+    const fetchType = request.headers.get('type');
+
     if (!uuid) {
         return NextResponse.json(
             { message: 'UUID is required' },
@@ -48,17 +50,36 @@ export const GET = async (request: Request) => {
     }
 
     try {
-        const audioBuffer = await fetchStoryAudio('tts-pipeline-bucket', uuid);
-        if (audioBuffer) {
-            return new NextResponse(audioBuffer, {
-                status: 200,
-                headers: {
-                    'Content-Type': 'audio/wav',
-                    'Content-Disposition': `attachment; filename="${uuid}.wav"`,
-                },
-            });
+        if (fetchType == 'audio') {
+            const audioBuffer = await fetchStoryAudio('tts-pipeline-bucket', uuid);
+            if (audioBuffer) {
+                return new NextResponse(audioBuffer, {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'audio/wav',
+                        'Content-Disposition': `attachment; filename="${uuid}.wav"`,
+                    },
+                });
+            } else {
+                return NextResponse.json({message: 'Audio file not found'}, {status: 404});
+            }
+        } else if (fetchType == 'text') {
+            const output = await fetchStory(uuid);
+            const story = JSON.parse(output?.body || '{"content": ""}').content;
+            if (story) {
+                return new NextResponse(story, {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'text/plain',
+                        'Content-Disposition': `attachment; filename="${uuid}.txt"`,
+                    }
+                });
+            } else {
+                return NextResponse.json({message: 'Text file not found'}, {status: 404});
+            }
         } else {
-            return NextResponse.json({message: 'Audio file not found'}, {status: 404});
+            console.error('Invalid file type attempted to be accessed');
+            return NextResponse.json({message: 'Invalid file type fetch'}, {status: 415});
         }
     } catch (err) {
         console.error('An unexpected error occurred: ', err);

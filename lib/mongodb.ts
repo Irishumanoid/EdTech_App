@@ -75,16 +75,31 @@ export const verifyLogin = async (email: string, password: string) => {
     }
 }
 
-export const addStory = async (text: string, userId?: string) => {
+export const addStory = async (text: string, uuid?: string) => {
     try {
         client.connect();
         const stories = client.db('users').collection('stories');
-        const out = await stories.insertOne({userId, text});
+        const out = await stories.insertOne({uuid, text});
         
         return {
             statusCode: 201,
             body: `Inserted new story, ${out}`
-        }
+        };
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
+
+export const fetchStory = async (uuid: string) => {
+    try {
+        client.connect();
+        const stories = client.db('users').collection('stories');
+        const story = await stories.findOne({uuid});
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({message: 'Fetched story', content: story?.text})
+        };
     } catch (err) {
         console.error('Error:', err);
     }

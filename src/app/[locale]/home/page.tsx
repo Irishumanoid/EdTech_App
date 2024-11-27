@@ -24,9 +24,10 @@ export default function Home() {
     const user = useAppSelector((state) => state.user);
     const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
     const [minutes, setMinutes] = useState(1);
-    const [ageRange, setAgeRange] = useState([0, 100]);
+    const [ageRange, setAgeRange] = useState([0, 18]);
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+    const [storyText, setStoryText] = useState(['']);
     const [loading, setLoading] = useState(false);
 
     const genButtonClick = () => {
@@ -87,18 +88,38 @@ export default function Home() {
         if (response.ok) {
             const output = await response.json();
             dispatch(setUuid(output.uuid));
-            const getResponse = await fetch('/api/generate', {
+            const audioGetResponse = await fetch('/api/generate', {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'uuid': output.uuid}
+                headers: { 'Content-Type': 'application/json', 'uuid': output.uuid, 'type': 'audio'}
             });
-            if (getResponse.ok) {
-                const audioContext = new window.AudioContext();
-                const arrayBuffer = await getResponse.arrayBuffer();
-                audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
-                    setAudioBuffer(decodedData);
-                    setIsAudio(true);
-                    setLoading(false);
-                });
+            const textGetResponse = await fetch('/api/generate', {
+                method: 'GET',
+                headers:  { 'Content-Type': 'application/json', 'uuid': output.uuid, 'type': 'text'}
+            });
+
+            if (audioGetResponse.ok) {
+                try {
+                    const audioContext = new window.AudioContext();
+                    const arrayBuffer = await audioGetResponse.arrayBuffer();
+                    audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
+                        setAudioBuffer(decodedData);
+                        setIsAudio(true);
+                        setLoading(false);
+                    });
+                } catch (error) {
+                    console.error('Error decoding audio');
+                }
+            }
+
+            if (textGetResponse.ok) {
+                try {
+                    const arrayBuffer = await textGetResponse.arrayBuffer();
+                    const decoder = new TextDecoder('utf-8');
+                    const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
+                    setStoryText(story);
+                } catch (error) {
+                    console.error('Error decoding text');
+                }
             }
         }
     }
@@ -175,7 +196,7 @@ export default function Home() {
                                     onChange={handleAgeSliderChange}
                                     valueLabelDisplay="auto"
                                     min={1}
-                                    max={100}
+                                    max={18}
                                     />
                                     <Typography>Min: {ageRange[0]}</Typography>
                                     <Typography>Max: {ageRange[1]}</Typography>
@@ -275,6 +296,14 @@ export default function Home() {
                     <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
                         {isAudio && <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>}
                     </Box>
+                    <br/>
+                    {storyText.length !== 1 && storyText.map((sentence) => {
+                        return (
+                        <div>
+                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
+                        </div>
+                        );
+                    })}
                 </Box>  
             </Box>
         </div>
