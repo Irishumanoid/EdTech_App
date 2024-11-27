@@ -297,10 +297,10 @@ export default function Home() {
                         {isAudio && <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>}
                     </Box>
                     <br/>
-                    {storyText.length !== 1 && storyText.map((sentence) => {
+                    {storyText.length !== 1 && storyText.map((sentence, index) => {
                         return (
                         <div>
-                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
+                            <Typography variant="body1" gutterBottom fontSize={22} key={index}> {sentence} </Typography>
                         </div>
                         );
                     })}
