@@ -46,6 +46,7 @@ export default function Login() {
           // make sure it doesn't move on if user doesn't exist
           console.log(`status code ${ response.status}`);
           if (response.ok && response.status === 200) { 
+            localStorage.setItem('userId', data.userId);
             router.push('/dashboard');
           }
         } catch (err) {

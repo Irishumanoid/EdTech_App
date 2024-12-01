@@ -1,7 +1,7 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import bcrypt from 'bcryptjs';
 
-const uri: string = process.env.NEXT_PUBLIC_MONGODB_URI || '';
+const uri: string = process.env.MONGODB_URI || '';
 const client = new MongoClient(uri);
 
 export const fetchRegistration = async (email: string, username: string, password: string) => {
@@ -104,3 +104,4 @@ export const fetchStory = async (uuid: string) => {
         console.error('Error:', err);
     }
 }
+

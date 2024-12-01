@@ -47,7 +47,7 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
                 <TextField
                     id="input-with-icon-textfield"
                     label={index === 0 ? "Child name" : `Friend ${index} name`}
-                    sx={{ position: 'relative', top: '30px' }}
+                    sx={{ position: 'relative', top: '30px', backgroundColor: 'var(--background)' }}
                     slotProps={{
                     input: {
                         startAdornment: (
@@ -78,9 +78,10 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
                     onChange={(e) => setPrefs(e.target.value)}
                     sx = {{
                         width:'50%',
-                        backgroundColor:'rgba(0, 0, 0, 0.05)',
                         position: 'relative', 
-                        top: '20px'
+                        top: '20px',
+                        backgroundColor: 'var(--background)',
+                        textEmphasisColor: 'var(--button-text)',
                     }}
                 />   
                 <IconButton 

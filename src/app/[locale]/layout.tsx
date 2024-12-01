@@ -9,6 +9,7 @@ import {
   useMessages
 } from 'next-intl'
 import { Inter, Rubik, Space_Grotesk } from 'next/font/google'
+import '@fontsource/quicksand';
 import NextTopLoader from 'nextjs-toploader'
 import { Header } from './components/Header'
 import './globals.css'
@@ -28,8 +29,8 @@ const space_grotesk = Space_Grotesk({
   variable: '--font-space-grotesk'
 })
 export const metadata: Metadata = {
-  title: 'Next Temp',
-  description: 'create next app!'
+  title: 'EdTech application',
+  description: 'Story generation application'
 }
 
 export default function RootLayout({
@@ -39,7 +40,8 @@ export default function RootLayout({
   children: React.ReactNode
   params: { locale: string }
 }) {
-  const messages = useMessages()
+  const messages = useMessages();
+
   return (
     <html
       lang={locale}
@@ -82,9 +84,10 @@ export default function RootLayout({
                   color="var(--primary)"
                   showSpinner={false}
                 />
-                <Header locale={locale} />
-                <main className="mx-auto max-w-screen-2xl"></main>
-              {children}
+                  <Header locale={locale} />
+                  <hr style={{ backgroundColor: 'var(--secondary)', height: '2px' }} />
+                  <main className="mx-auto max-w-screen-2xl"></main>
+                  {children} 
             </ClientWrapper>
             </NextIntlClientProvider>
           </ThemeProvider>

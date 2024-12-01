@@ -48,3 +48,8 @@ export const audioBufferToWav = (buffer: AudioBuffer): Blob => {
   return new Blob([wavBuffer], { type: "audio/wav" });
 };
 
+export const getBlobUrl = (buffer: AudioBuffer) => {
+  const wavBlob = audioBufferToWav(buffer);
+  return URL.createObjectURL(wavBlob);
+}
+

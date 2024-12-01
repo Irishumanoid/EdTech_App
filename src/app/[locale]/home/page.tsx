@@ -15,7 +15,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid2';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
-import { audioBufferToWav } from '@/lib/utils';
+import { getBlobUrl } from '@/lib/utils';
 
 
 //on submit, add everything to gptprompt object
@@ -60,11 +60,6 @@ export default function Home() {
             dispatch(setAges(newValue));
         }
     };
-
-    const getBlobUrl = (buffer: AudioBuffer) => {
-        const wavBlob = audioBufferToWav(buffer);
-        return URL.createObjectURL(wavBlob);
-    }
 
     //fetch everything from user object and generate story
     const handleUpdate = async () => {
@@ -142,7 +137,7 @@ export default function Home() {
                         width: 1200,
                         height: 'auto',
                         flexDirection: 'column',
-                        backgroundColor: '#f9f9f9',
+                        backgroundColor: 'var(--background-secondary)',
                         padding: '2rem',
                         borderRadius: '8px',
                         boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
@@ -159,8 +154,8 @@ export default function Home() {
                     <Box sx={{ flexGrow: 2 }}>
                         <Grid container spacing={2}>
                             <Grid size={3}>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 150 }}>
-                                    <InputLabel id="demo-simple-select-filled-label">Content Type</InputLabel>
+                                <FormControl variant="filled" sx={{ m: 1, minWidth: 150, backgroundColor: 'var(--background)' }}>
+                                    <InputLabel id="demo-simple-select-filled-label" >Content Type</InputLabel>
                                     <Select
                                     labelId="demo-simple-select-filled-label"
                                     id="demo-simple-select-filled"
@@ -209,7 +204,7 @@ export default function Home() {
                         </Grid>
                     </Box>
                     <Typography variant='h6'>Story Archetype</Typography>
-                    <Accordion>
+                    <Accordion sx={{backgroundColor: 'var(--background)'}}>
                         <AccordionSummary
                         expandIcon={<ArrowDownwardIcon />}
                         aria-controls="panel1-content"
@@ -235,7 +230,7 @@ export default function Home() {
                     <br/>
                     <Grid container spacing={2}>
                         <Grid size={6}>
-                            <TextField sx={{width:'640px'}}
+                            <TextField sx={{ width:'640px', backgroundColor: 'var(--background)' }}
                                 id="filled-basic" 
                                 label="Other information" 
                                 variant="filled" 
@@ -246,7 +241,7 @@ export default function Home() {
                             />
                         </Grid>
                         <Grid size={6}>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 250 }}>
+                            <FormControl variant="filled" sx={{ m: 1, minWidth: 250, backgroundColor: 'var(--background)' }}>
                                 <InputLabel id="demo-simple-select-filled-label">Language</InputLabel>
                                 <Select
                                 labelId="demo-simple-select-filled-label"
@@ -264,7 +259,7 @@ export default function Home() {
                                 <MenuItem value="Russian">Russian</MenuItem>
                                 </Select>
                             </FormControl>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 100 }}>
+                            <FormControl variant="filled" sx={{ m: 1, minWidth: 100, backgroundColor: 'var(--background)' }}>
                                 <InputLabel id="demo-simple-select-filled-label">Voice gender</InputLabel>
                                 <Select
                                 labelId="demo-simple-select-filled-label"
