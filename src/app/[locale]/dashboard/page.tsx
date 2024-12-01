@@ -190,7 +190,7 @@ export default function Dashboard() {
                                 }}>
                                     <Stack spacing={2}>
                                         <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900 }}>
-                                            You don't have any stories yet.
+                                            You don&apos;t have any stories yet.
                                         </Typography>
                                         <Typography fontSize={16} sx={{ textAlign: 'center' }}>
                                             Click the generate button above to create your first personalized story!
