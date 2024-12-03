@@ -52,4 +52,3 @@ export const getBlobUrl = (buffer: AudioBuffer) => {
   const wavBlob = audioBufferToWav(buffer);
   return URL.createObjectURL(wavBlob);
 }
-

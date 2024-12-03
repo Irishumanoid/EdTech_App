@@ -74,9 +74,10 @@ export default function Home() {
         dispatch(updateUsers({users: updatedUsers}));  
         console.log(JSON.stringify(user));
 
+        const id = localStorage.getItem('userId');
         const response = await fetch('/api/generate', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'userId': id ? id : '' },
             body: JSON.stringify(user),
         });
 
@@ -149,8 +150,6 @@ export default function Home() {
                         <AddIcon />
                         New User
                     </IconButton>
-                    <br/>
-                    <br/>
                     <Box sx={{ flexGrow: 2 }}>
                         <Grid container spacing={2}>
                             <Grid size={3}>
@@ -254,7 +253,7 @@ export default function Home() {
                                 <MenuItem value="French">French</MenuItem>
                                 <MenuItem value="German">German</MenuItem>
                                 <MenuItem value="Japanese">Japanese</MenuItem>
-                                <MenuItem value="Madarin">Mandarin</MenuItem>
+                                <MenuItem value="Mandarin">Mandarin</MenuItem>
                                 <MenuItem value="Spanish">Spanish</MenuItem>
                                 <MenuItem value="Russian">Russian</MenuItem>
                                 </Select>

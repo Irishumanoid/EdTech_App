@@ -1,11 +1,12 @@
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, IconButton, Stack, Typography } from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import ShareIcon from '@mui/icons-material/Share';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import { getBlobUrl } from "@/lib/utils";
 import Button from "./Button";
-import { useEffect, useState } from "react";
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import { useState } from "react";
 
 
 interface ContentPlayerProps {
@@ -20,6 +21,10 @@ export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
     const duration = audio.length / audio.sampleRate; // seconds
     const minutes = Math.floor(duration / 60);
     const seconds = (duration - minutes * 60).toString().slice(0, 2);
+
+    const deleteStory = async () => {
+        //delete story from gcloud, create onDelete prop
+    }
  
     return (
         <Box sx={{
@@ -39,9 +44,9 @@ export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
             <Stack spacing={4} alignItems='center'>
                 <Stack direction='row' spacing={2} alignItems='center'>
                     <Stack direction='row' spacing={4} paddingRight={launchPlayer ? '70px' : '220px'} alignItems='center'>
-                        <Typography fontSize={20}> {contentName} </Typography>
+                        <Typography fontSize={20} sx={{ color: 'black' }}> {contentName} </Typography>
                         {!launchPlayer &&
-                            <Typography fontSize={20}> {`${minutes}:${seconds.includes('.') ? `0${seconds[0]}` : seconds}`} </Typography>
+                            <Typography fontSize={20} sx={{ color: 'black' }}> {`${minutes}:${seconds.includes('.') ? `0${seconds[0]}` : seconds}`} </Typography>
                         }
                     </Stack>
                     {launchPlayer &&
@@ -54,7 +59,13 @@ export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
                             <LaunchIcon/>
                             {launchPlayer ? 'Collapse' : 'Launch'}
                         </Button>
-                        <ShareIcon/>
+                        <ShareIcon sx={{ color: 'black' }}/>
+                        <IconButton 
+                            color="primary" 
+                            aria-label="delete" 
+                            onClick={() => deleteStory()}>
+                            <DeleteForeverIcon sx={{color: 'darkred', fontSize: 30}}/>
+                        </IconButton>
                     </Stack>
                 </Stack>
             </Stack>

@@ -1,24 +1,38 @@
 'use client'
 
-import { Box, Button, ButtonGroup, Stack, Typography } from "@mui/material";
+import { AppBar, Box, Button, ButtonGroup, Dialog, IconButton, Slide, Stack, Toolbar, Typography } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import Image from 'next/image';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { useEffect, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
+import CloseIcon from '@mui/icons-material/Close';
 import { ContentPlayer } from "../components/ContentPlayer";
+import { TransitionProps } from "@mui/material/transitions";
+import Home from "../home/page";
 
+const theme = createTheme({
+    typography: {
+      fontFamily: 'quicksand',
+    },
+});
+
+const Transition = forwardRef(function Transition(
+    props: TransitionProps & {
+      children: React.ReactElement<unknown>;
+    },
+    ref: React.Ref<unknown>,
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
 
 export default function Dashboard() {
-    const theme = createTheme({
-        typography: {
-          fontFamily: 'quicksand',
-        },
-    });
-
+    const [popupOpen, setPopupOpen] = useState(false);
     const [content, setContent] = useState<AudioBuffer[] | null>(null);
     
     useEffect(() => {
+        const audioContext = new window.AudioContext();
+
         const fetchStories = async () => {
             const userId = localStorage.getItem('userId');
             if (!userId) {
@@ -47,7 +61,6 @@ export default function Dashboard() {
                             });
             
                             if (audioGetResponse.ok) {
-                                const audioContext = new window.AudioContext();
                                 const arrayBuffer = await audioGetResponse.arrayBuffer();
                                 return new Promise<AudioBuffer>((resolve, reject) => {
                                     audioContext.decodeAudioData(arrayBuffer, resolve, reject);
@@ -65,6 +78,18 @@ export default function Dashboard() {
         }
         fetchStories();
     }, []);
+
+    const handleClickOpen = () => {
+        setPopupOpen(true);
+      };
+    
+      const handleClose = () => {
+        setPopupOpen(false);
+      };
+
+    const handleGenerationRequest = () => {
+
+    }
       
     return (
         <ThemeProvider theme={theme}>
@@ -151,7 +176,6 @@ export default function Dashboard() {
                                     Ready to immerse yourself in multilingual stories personalized to your preferences? 
                                 </Typography>
                             </Stack>
-
                             <Box sx={{
                                 display: 'flex',
                                 justifyContent: 'center', 
@@ -165,17 +189,15 @@ export default function Dashboard() {
                             }}>
                                 <Stack direction="row" spacing={65} alignItems='center'>
                                     <Stack spacing={1}>
-                                        <Typography fontSize={30}>Story Maker</Typography>
-                                        <Typography fontSize={18}>Generate another masterpiece</Typography>
+                                        <Typography fontSize={30} sx={{color: 'black'}}>Story Maker</Typography>
+                                        <Typography fontSize={18} sx={{color: 'black'}}>Generate another masterpiece</Typography>
                                     </Stack>
-                                    <Button size='small' sx={{backgroundColor: 'var(--selected)', height: '50px'}}>Generate new</Button>
+                                    <Button size='small' sx={{backgroundColor: 'var(--selected)', height: '50px'}} onClick={() => handleClickOpen()}>Generate new</Button>
                                 </Stack>
                             </Box>
-
-                            <Typography variant='h4' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
+                            <Typography variant='h4' paddingBottom='25px' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
                                 Your Stories 
                             </Typography>
-
                             {content === null && (
                                 <Box sx={{
                                     display: 'flex',
@@ -189,10 +211,10 @@ export default function Dashboard() {
                                     marginTop: '2rem',
                                 }}>
                                     <Stack spacing={2}>
-                                        <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900 }}>
+                                        <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
                                             You don&apos;t have any stories yet.
                                         </Typography>
-                                        <Typography fontSize={16} sx={{ textAlign: 'center' }}>
+                                        <Typography fontSize={16} sx={{ textAlign: 'center', color: 'black' }}>
                                             Click the generate button above to create your first personalized story!
                                         </Typography>
                                     </Stack>
@@ -201,7 +223,7 @@ export default function Dashboard() {
                             {content !== null &&
                                 content.map((c, index) => {
                                     return(
-                                        <ContentPlayer key={index} contentName="test content" audio={c}/>
+                                        <ContentPlayer key={index} contentName={`Story ${index+1}`} audio={c}/>
                                     );
                                 })
                             }
@@ -209,6 +231,33 @@ export default function Dashboard() {
                     </Box>
                     </Grid> 
                 </Grid>
+                <Dialog
+                    fullScreen
+                    open={popupOpen}
+                    onClose={handleClose}
+                    TransitionComponent={Transition}
+                    sx={{backgroundColor: 'transparent'}}
+                >
+                    <AppBar sx={{ position: 'relative' }}>
+                    <Toolbar sx={{ backgroundColor: 'darkgrey' }}>
+                        <IconButton
+                        edge="start"
+                        color="inherit"
+                        onClick={handleClose}
+                        aria-label="close"
+                        >
+                        <CloseIcon />
+                        </IconButton>
+                        <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                            Sound
+                        </Typography>
+                        <Button autoFocus color="inherit" onClick={handleClose}>
+                            Save
+                        </Button>
+                    </Toolbar>
+                    <Home/>
+                    </AppBar>
+                </Dialog>
             </Box>
         </ThemeProvider>
     );

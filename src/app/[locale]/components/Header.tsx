@@ -47,8 +47,10 @@ export const Header: FC<Props> = ({ locale }) => {
             </div>
           }
         </nav>
-        <ThemeSwitch />
-        <LangSwitcher />
+        <div className="relative flex flex-row items-center gap-4 z-10">
+          <ThemeSwitch />
+          <LangSwitcher />
+        </div>
       </div>
     </div>
   )
