@@ -23,7 +23,7 @@ const initialState: userStoryState = {
     users: [],
     type: 'story',
     numMins: 1,
-    ageRange: [1, 100],
+    ageRange: [1, 18],
     plots: [],
     keywords: false,
     otherInfo: '',
@@ -85,6 +85,9 @@ const userStorySlice = createSlice({
                 state.plots = state.plots.filter(p => p !== plot);
             }
         },
+        resetPlots: (state) => {
+            state.plots = [];
+        },
         setKeywords: (state, action: PayloadAction<boolean>) => {
             state.keywords = action.payload;
         },
@@ -104,5 +107,5 @@ const userStorySlice = createSlice({
 });
 
 
-export const { addUser, modifyUser, updateUsers, removeUser, setType, setNumMins, setAgeRange, addPlot, removePlot, setKeywords, setOtherInfo, setLanguage, setVoiceGender, setUuid } = userStorySlice.actions;
+export const { addUser, modifyUser, updateUsers, removeUser, setType, setNumMins, setAgeRange, addPlot, removePlot, resetPlots, setKeywords, setOtherInfo, setLanguage, setVoiceGender, setUuid } = userStorySlice.actions;
 export default userStorySlice.reducer;

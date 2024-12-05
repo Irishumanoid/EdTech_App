@@ -14,6 +14,10 @@ export const Header: FC<Props> = ({ locale }) => {
   const pathname = usePathname();
   const relDir = pathname.split('/')[pathname.split('/').length - 1];
 
+  const handleLogout = () => {
+    localStorage.setItem('userId', '');
+  }
+
   return (
     <div className='mx-auto flex max-w-screen-2xl flex-row items-center justify-between p-2'>
       <Link lang={locale} href='/'>
@@ -41,7 +45,7 @@ export const Header: FC<Props> = ({ locale }) => {
           }
           {relDir == 'dashboard' && 
             <div className='flex flex-row items-center gap-3'>
-              <Link lang={locale} href={`/`}> 
+              <Link lang={locale} href={`/`} onClick={() => handleLogout()}> 
                 {t('Logout')}
               </Link>
             </div>

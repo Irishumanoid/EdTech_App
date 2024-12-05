@@ -6,24 +6,51 @@ import 'react-h5-audio-player/lib/styles.css';
 import { getBlobUrl } from "@/lib/utils";
 import Button from "./Button";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 
 interface ContentPlayerProps {
     contentName: string,
     audio: AudioBuffer,
+    index: number,
+    storyId: string,
+    onDelete: (index: number) => void,
 }
 
 //content name, duration, launch play button (if pressed, launch audio player, when pressed again, close audio player), share button
-export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
+export const ContentPlayer = ({contentName, audio, index, storyId, onDelete }: ContentPlayerProps) => {
     const [launchPlayer, setLaunchPlayer] = useState(false);
+    const [story, setStory] = useState(['']);
+    const [showTranscript, setShowTranscript] = useState(false);
 
     const duration = audio.length / audio.sampleRate; // seconds
     const minutes = Math.floor(duration / 60);
     const seconds = (duration - minutes * 60).toString().slice(0, 2);
+    const audioSrc = useMemo(() => getBlobUrl(audio as AudioBuffer), [audio]);
 
-    const deleteStory = async () => {
-        //delete story from gcloud, create onDelete prop
+    const deleteStory = () => {
+        onDelete(index);
+    }
+
+    const fetchTranscript = async () => {
+        setShowTranscript(!showTranscript);
+        if (story.length === 1) {
+            const textGetResponse = await fetch('/api/generate', {
+                method: 'GET',
+                headers:  { 'Content-Type': 'application/json', 'uuid': `${localStorage.getItem('userId')}/${storyId}`, 'type': 'text'}
+            });
+    
+            if (textGetResponse.ok) {
+                try {
+                    const arrayBuffer = await textGetResponse.arrayBuffer();
+                    const decoder = new TextDecoder('utf-8');
+                    const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
+                    setStory(story);
+                } catch (error) {
+                    console.error('Error decoding text');
+                }
+            }
+        }
     }
  
     return (
@@ -44,14 +71,23 @@ export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
             <Stack spacing={4} alignItems='center'>
                 <Stack direction='row' spacing={2} alignItems='center'>
                     <Stack direction='row' spacing={4} paddingRight={launchPlayer ? '70px' : '220px'} alignItems='center'>
-                        <Typography fontSize={20} sx={{ color: 'black' }}> {contentName} </Typography>
+                        <Stack spacing={0.5} alignItems='center' width='150px'>
+                            <Typography fontSize={20} sx={{ color: 'black' }}> {contentName} </Typography>
+                            {launchPlayer &&
+                                <Button rounded style={{ fontSize: '10pt' }} onClick={() => fetchTranscript()}> 
+                                    {showTranscript ? 'Hide transcript' : 'Show transcript'}
+                                </Button>
+                            }
+                        </Stack>
                         {!launchPlayer &&
-                            <Typography fontSize={20} sx={{ color: 'black' }}> {`${minutes}:${seconds.includes('.') ? `0${seconds[0]}` : seconds}`} </Typography>
+                            <Typography fontSize={20} sx={{ color: 'black' }}> 
+                                {`${minutes}:${seconds.includes('.') ? `0${seconds[0]}` : seconds}`} 
+                            </Typography>
                         }
                     </Stack>
                     {launchPlayer &&
                         <Box width='400px'>
-                            <AudioPlayer autoPlay src={getBlobUrl(audio as AudioBuffer)} style={{ backgroundColor: 'var(--selected)' }}/>
+                            <AudioPlayer autoPlay src={audioSrc} style={{ backgroundColor: 'var(--selected)' }}/>
                         </Box>
                     }
                     <Stack direction='row' spacing={4} paddingLeft={launchPlayer ? '70px' : '220px'} alignItems='center'>
@@ -68,6 +104,13 @@ export const ContentPlayer = ({contentName, audio}: ContentPlayerProps) => {
                         </IconButton>
                     </Stack>
                 </Stack>
+                {(showTranscript && story.length !== 0) && story.map((sentence, index) => {
+                        return (
+                        <div key={index}>
+                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
+                        </div>
+                        );
+                    })}
             </Stack>
         </Box>
     );

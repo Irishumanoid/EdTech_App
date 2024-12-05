@@ -105,3 +105,23 @@ export const fetchStory = async (uuid: string) => {
     }
 }
 
+export const deleteStoryText = async (uuid: string) => {
+    try {
+        client.connect();
+        const stories = client.db('users').collection('stories');
+        const story = await stories.deleteOne({uuid});
+        if (story.deletedCount === 1) {
+            return {
+                statusCode: 200,
+                body: JSON.stringify({message: `Deleted story ${uuid}`})
+            };
+        }
+        return {
+            statusCode: 400,
+            body: JSON.stringify({message: `Failed to deleted story ${uuid}`})
+        };
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
+

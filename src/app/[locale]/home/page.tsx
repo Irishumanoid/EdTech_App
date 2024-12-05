@@ -3,11 +3,11 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 
 import { useAppDispatch, useAppSelector } from  '../../store/hooks';
-import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, setLanguage, updateUsers, setVoiceGender, setUuid } from '../../store/features/userStorySlice';
+import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, setLanguage, updateUsers, setVoiceGender, setUuid, resetPlots } from '../../store/features/userStorySlice';
 import Button from '../components/Button';
 import { ChildInfo } from '../components/ChildInfo';
 import { CheckboxGrid } from '../components/CheckboxGrid';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
@@ -29,6 +29,18 @@ export default function Home() {
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
     const [storyText, setStoryText] = useState(['']);
     const [loading, setLoading] = useState(false);
+
+    // reset to default state when page reloaded
+    useEffect(() => {
+        dispatch(setType('story'));
+        dispatch(setNumMins(1));
+        dispatch(setAges([1, 18]));
+        dispatch(resetPlots());
+        dispatch(setKeywords(false));
+        dispatch(setOtherInfo(''));
+        dispatch(setLanguage('English'));
+        dispatch(setVoiceGender('Female'));
+    }, []);
 
     const genButtonClick = () => {
         const newIndex = inputList.length;
@@ -64,6 +76,7 @@ export default function Home() {
     //fetch everything from user object and generate story
     const handleUpdate = async () => {
         setLoading(true);
+        setStoryText([]);
         if (isAudio) {
             setIsAudio(false);
         }
@@ -291,7 +304,7 @@ export default function Home() {
                         {isAudio && <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>}
                     </Box>
                     <br/>
-                    {storyText.length !== 1 && storyText.map((sentence, index) => {
+                    {storyText.length !== 0 && storyText.map((sentence, index) => {
                         return (
                         <div key={index}>
                             <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>

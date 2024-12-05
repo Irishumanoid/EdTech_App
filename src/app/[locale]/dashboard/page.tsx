@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Box, Button, ButtonGroup, Dialog, IconButton, Slide, Stack, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, ButtonGroup, CircularProgress, Dialog, IconButton, Slide, Stack, Toolbar, Typography } from "@mui/material";
 import Grid from '@mui/material/Grid2';
 import Image from 'next/image';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -28,12 +28,15 @@ const Transition = forwardRef(function Transition(
 
 export default function Dashboard() {
     const [popupOpen, setPopupOpen] = useState(false);
+    const [ids, setIds] = useState(['']);
     const [content, setContent] = useState<AudioBuffer[] | null>(null);
+    const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         const audioContext = new window.AudioContext();
 
         const fetchStories = async () => {
+            setLoading(true);
             const userId = localStorage.getItem('userId');
             if (!userId) {
                 console.error('User ID not found in localStorage');
@@ -47,6 +50,7 @@ export default function Dashboard() {
             if (idsGetResponse.ok) {
                 const response = await idsGetResponse.json();
                 const ids: string[] = response.storyIds;
+                setIds(ids);
     
                 try {
                     const decodedDataArray: AudioBuffer[] = await Promise.all(
@@ -71,6 +75,7 @@ export default function Dashboard() {
                         })
                     );
                     setContent(decodedDataArray);
+                    setLoading(false);
                 } catch (error) {
                     console.error('Error during audio processing:', error);
                 }
@@ -81,11 +86,33 @@ export default function Dashboard() {
 
     const handleClickOpen = () => {
         setPopupOpen(true);
-      };
+    };
     
-      const handleClose = () => {
+    const handleClose = (refresh: boolean) => {
         setPopupOpen(false);
-      };
+        if (refresh) {
+            window.location.reload();
+        }
+    };
+
+    const contentDelete = async (index: number) => {
+        if (content) {
+            setContent(content.filter((_, i) => i !== index));
+        }
+        try {
+            const deleteResponse = await fetch('/api/generate', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json', 'uuid': `${localStorage.getItem('userId')}/${ids[index]}` }
+            });
+            if (deleteResponse.ok) {
+                if (ids) {
+                    setIds(ids.filter((_, i) => i !== index));
+                }
+            }
+        } catch (error) {
+            console.error(`failed to delete audio`, error);
+        }
+    }
 
     const handleGenerationRequest = () => {
 
@@ -198,7 +225,7 @@ export default function Dashboard() {
                             <Typography variant='h4' paddingBottom='25px' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
                                 Your Stories 
                             </Typography>
-                            {content === null && (
+                            {(content?.length === 0 || loading) &&
                                 <Box sx={{
                                     display: 'flex',
                                     justifyContent: 'center', 
@@ -210,20 +237,29 @@ export default function Dashboard() {
                                     borderRadius: '8px',
                                     marginTop: '2rem',
                                 }}>
-                                    <Stack spacing={2}>
-                                        <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
-                                            You don&apos;t have any stories yet.
-                                        </Typography>
-                                        <Typography fontSize={16} sx={{ textAlign: 'center', color: 'black' }}>
-                                            Click the generate button above to create your first personalized story!
-                                        </Typography>
-                                    </Stack>
+                                    {loading? (
+                                        <Stack spacing={2} alignItems="center" justifyContent="center">
+                                            <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
+                                                Fetching your stories!
+                                            </Typography>
+                                            <CircularProgress size={40} />
+                                        </Stack>
+                                        ) : (
+                                        <Stack spacing={2} alignItems="center" justifyContent="center">
+                                            <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
+                                                You don&apos;t have any stories yet.
+                                            </Typography>
+                                            <Typography fontSize={16} sx={{ textAlign: 'center', color: 'black' }}>
+                                                Click the generate button above to create your first personalized story!
+                                            </Typography>
+                                        </Stack>
+                                    )}
                                 </Box>
-                            )}
+                            }
                             {content !== null &&
                                 content.map((c, index) => {
                                     return(
-                                        <ContentPlayer key={index} contentName={`Story ${index+1}`} audio={c}/>
+                                        <ContentPlayer key={index} contentName={`Story ${index+1}`} index={index} storyId={ids[index]} onDelete={() => contentDelete(index)} audio={c}/>
                                     );
                                 })
                             }
@@ -234,7 +270,7 @@ export default function Dashboard() {
                 <Dialog
                     fullScreen
                     open={popupOpen}
-                    onClose={handleClose}
+                    onClose={() => handleClose(false)}
                     TransitionComponent={Transition}
                     sx={{backgroundColor: 'transparent'}}
                 >
@@ -243,7 +279,7 @@ export default function Dashboard() {
                         <IconButton
                         edge="start"
                         color="inherit"
-                        onClick={handleClose}
+                        onClick={() => handleClose(false)}
                         aria-label="close"
                         >
                         <CloseIcon />
@@ -251,7 +287,7 @@ export default function Dashboard() {
                         <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
                             Sound
                         </Typography>
-                        <Button autoFocus color="inherit" onClick={handleClose}>
+                        <Button autoFocus color="inherit" onClick={() => handleClose(true)}>
                             Save
                         </Button>
                     </Toolbar>

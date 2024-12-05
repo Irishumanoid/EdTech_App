@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { synthesizeLongAudio, fetchStoryAudio } from '@/lib/gptGen.mjs';
+import { synthesizeLongAudio, fetchStoryAudio, deleteStory } from '@/lib/gptGen.mjs';
 import { Child, GPTPrompt } from '@/lib/promptObjs.mjs';
 import { ChildType } from '../../store/features/userStorySlice';
-import { addStory, fetchStory } from '@/lib/mongodb';
+import { addStory, fetchStory, deleteStoryText } from '@/lib/mongodb';
 
 interface ChildInfo {
     users: ChildType[]
@@ -32,8 +32,8 @@ export const POST = async (request: Request) => {
         }
 
         return NextResponse.json({message: 'Content generated sucessfully', uuid: uuid}, {status: 200});
-    } catch (err) {
-        console.error('An unexpected error occurred: ', err);
+    } catch (error) {
+        console.error('An unexpected error occurred: ', error);
         return NextResponse.json({message: 'An unexpected error occurred'}, {status: 500});
     }
 }
@@ -82,9 +82,28 @@ export const GET = async (request: Request) => {
             console.error('Invalid file type attempted to be accessed');
             return NextResponse.json({message: 'Invalid file type fetch'}, {status: 415});
         }
-    } catch (err) {
-        console.error('An unexpected error occurred: ', err);
+    } catch (error) {
+        console.error('An unexpected error occurred: ', error);
         return NextResponse.json({message: 'An unexpected error occurred'}, {status: 500});
+    }
+}
+
+export const DELETE = async (request: Request) => {
+    const userId = request.headers.get('uuid');
+
+    if (!userId) {
+        return NextResponse.json(
+            { message: 'uuid is required for content deletion' },
+            { status: 400 }
+        );
+    }
+    try {
+        await deleteStory('tts-pipeline-bucket', userId);
+        await deleteStoryText(userId);
+        return NextResponse.json({message: 'Successfully deleted content'}, {status: 200});
+    } catch (error) {
+        console.error('An unexpected error occurred: ', error);
+        return NextResponse.json({message: 'An unexpected error occurred during content deletion'}, {status: 500});
     }
 }
 
