@@ -18,12 +18,9 @@ import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import { downloadStory, getBlobUrl } from '@/lib/utils';
  
-interface HomeProps {
-    loggedIn?: boolean
-}
 
 //on submit, add everything to gptprompt object
-export default function Home({loggedIn} : HomeProps) {
+export default function Home() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
     const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
@@ -124,6 +121,7 @@ export default function Home({loggedIn} : HomeProps) {
             }
         } else {
             let id = localStorage.getItem('userId');
+            const loggedIn = localStorage.getItem('loggedIn');
             if (!loggedIn) {
                 id = '';
             }

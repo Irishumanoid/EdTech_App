@@ -41,7 +41,6 @@ export const POST = async (request: Request) => {
             const voiceGender = request.headers.get('voiceGender');
 
             try {
-                console.log(`transcript: ${transcript}, lang: ${language}, voicegender: ${voiceGender}, uuid: ${uuid}, userId: ${userId}`);
                 await synthesizeLongAudio(transcript, language, voiceGender, uuid, userId);
                 return NextResponse.json({message: 'Audio generated sucessfully', uuid: uuid}, {status: 201});
             } catch (error) {

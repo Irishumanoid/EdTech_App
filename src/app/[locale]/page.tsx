@@ -5,6 +5,8 @@ import Button from './components/Button';
 
 export default function DashboardPage() {
   const t = useTranslations('');
+  localStorage.setItem('loggedIn', 'n');
+  
   return (
       <div>
         <section className='flex flex-col items-center justify-center py-24'>
