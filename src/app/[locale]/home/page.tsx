@@ -8,18 +8,22 @@ import Button from '../components/Button';
 import { ChildInfo } from '../components/ChildInfo';
 import { CheckboxGrid } from '../components/CheckboxGrid';
 import { useEffect, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, TextField, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import DownloadIcon from '@mui/icons-material/Download';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid2';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
-import { getBlobUrl } from '@/lib/utils';
-
+import { downloadStory, getBlobUrl } from '@/lib/utils';
+ 
+interface HomeProps {
+    loggedIn?: boolean
+}
 
 //on submit, add everything to gptprompt object
-export default function Home() {
+export default function Home({loggedIn} : HomeProps) {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
     const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
@@ -28,6 +32,7 @@ export default function Home() {
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
     const [storyText, setStoryText] = useState(['']);
+    const [gotStory, setGotStory] = useState(false);
     const [loading, setLoading] = useState(false);
 
     // reset to default state when page reloaded
@@ -74,60 +79,79 @@ export default function Home() {
     };
 
     //fetch everything from user object and generate story
-    const handleUpdate = async () => {
+    const handleUpdate = async (audioGen: boolean) => {
         setLoading(true);
-        setStoryText([]);
         if (isAudio) {
             setIsAudio(false);
         }
-        const updatedUsers = user.users.filter((curUser) => 
-            !(curUser.name === "" && curUser.preferences.length === 0 && curUser.pronoun === "")
-        );
-        
-        dispatch(updateUsers({users: updatedUsers}));  
-        console.log(JSON.stringify(user));
 
-        const id = localStorage.getItem('userId');
-        const response = await fetch('/api/generate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'userId': id ? id : '' },
-            body: JSON.stringify(user),
-        });
-
-        if (response.ok) {
-            const output = await response.json();
-            dispatch(setUuid(output.uuid));
-            const audioGetResponse = await fetch('/api/generate', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', 'uuid': output.uuid, 'type': 'audio'}
+        if (!audioGen) {
+            setStoryText([]);
+            const updatedUsers = user.users.filter((curUser) => 
+                !(curUser.name === "" && curUser.preferences.length === 0 && curUser.pronoun === "")
+            );
+            
+            dispatch(updateUsers({users: updatedUsers}));  
+            console.log(JSON.stringify(user));
+    
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'type': 'text' },
+                body: JSON.stringify(user),
             });
-            const textGetResponse = await fetch('/api/generate', {
-                method: 'GET',
-                headers:  { 'Content-Type': 'application/json', 'uuid': output.uuid, 'type': 'text'}
-            });
-
-            if (audioGetResponse.ok) {
-                try {
-                    const audioContext = new window.AudioContext();
-                    const arrayBuffer = await audioGetResponse.arrayBuffer();
-                    audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
-                        setAudioBuffer(decodedData);
-                        setIsAudio(true);
+    
+            if (response.ok) {
+                const output = await response.json();
+                dispatch(setUuid(output.uuid));
+            
+                const textGetResponse = await fetch('/api/generate', {
+                    method: 'GET',
+                    headers:  { 'Content-Type': 'application/json', 'type': 'text', 'uuid': output.uuid}
+                });
+    
+                if (textGetResponse.ok) {
+                    try {
+                        const arrayBuffer = await textGetResponse.arrayBuffer();
+                        const decoder = new TextDecoder('utf-8');
+                        const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
+                        setStoryText(story);
                         setLoading(false);
-                    });
-                } catch (error) {
-                    console.error('Error decoding audio');
+                        setGotStory(true);
+                    } catch (error) {
+                        console.error('Error decoding text');
+                    }
                 }
             }
+        } else {
+            let id = localStorage.getItem('userId');
+            if (!loggedIn) {
+                id = '';
+            }
+            const response = await fetch('/api/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': user.requestUuid, 'userId': id as string, 'language': user.language, 'voiceGender': user.voiceGender},
+                body: JSON.stringify(storyText.join(''))
+            });
 
-            if (textGetResponse.ok) {
-                try {
-                    const arrayBuffer = await textGetResponse.arrayBuffer();
-                    const decoder = new TextDecoder('utf-8');
-                    const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
-                    setStoryText(story);
-                } catch (error) {
-                    console.error('Error decoding text');
+            if (response.ok) {
+                const uuid = loggedIn ? `${id}/${user.requestUuid}` : user.requestUuid;
+                const audioGetResponse = await fetch('/api/generate', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': uuid },
+                });
+    
+                if (audioGetResponse.ok) {
+                    try {
+                        const audioContext = new window.AudioContext();
+                        const arrayBuffer = await audioGetResponse.arrayBuffer();
+                        audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
+                            setAudioBuffer(decodedData);
+                            setIsAudio(true);
+                            setLoading(false);
+                        });
+                    } catch (error) {
+                        console.error('Error decoding audio');
+                    }
                 }
             }
         }
@@ -291,8 +315,8 @@ export default function Home() {
                             style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
                             rounded 
                             size='large' 
-                            onClick={handleUpdate}> 
-                                Generate 
+                            onClick={() => handleUpdate(gotStory ? true : false)}> 
+                                {gotStory ? 'Generate audio' : 'Generate text'}
                         </Button>
                         <Box sx={{ width: 48, height: 48, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                             {loading && <CircularProgress size={40} />}
@@ -301,7 +325,12 @@ export default function Home() {
                     <br/>
                     <br/>
                     <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
-                        {isAudio && <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>}
+                        {isAudio && 
+                            <Stack direction='row' spacing={2} width='600px'>
+                                <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>
+                                <DownloadIcon fontSize='large' sx={{ cursor: 'pointer' }} onClick={() => downloadStory(getBlobUrl(audioBuffer as AudioBuffer), storyText)}/>
+                            </Stack>
+                        }
                     </Box>
                     <br/>
                     {storyText.length !== 0 && storyText.map((sentence, index) => {

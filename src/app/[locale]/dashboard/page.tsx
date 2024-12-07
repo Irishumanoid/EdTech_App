@@ -31,7 +31,8 @@ export default function Dashboard() {
     const [ids, setIds] = useState(['']);
     const [content, setContent] = useState<AudioBuffer[] | null>(null);
     const [loading, setLoading] = useState(true);
-    
+
+
     useEffect(() => {
         const audioContext = new window.AudioContext();
 
@@ -113,11 +114,7 @@ export default function Dashboard() {
             console.error(`failed to delete audio`, error);
         }
     }
-
-    const handleGenerationRequest = () => {
-
-    }
-      
+ 
     return (
         <ThemeProvider theme={theme}>
             <Box 
@@ -259,7 +256,16 @@ export default function Dashboard() {
                             {content !== null &&
                                 content.map((c, index) => {
                                     return(
-                                        <ContentPlayer key={index} contentName={`Story ${index+1}`} index={index} storyId={ids[index]} onDelete={() => contentDelete(index)} audio={c}/>
+                                        <Box key={index}>
+                                            <ContentPlayer 
+                                                key={index} 
+                                                contentName={`Story ${index+1}`} 
+                                                index={index} 
+                                                storyId={ids[index]} 
+                                                onDelete={() => contentDelete(index)} 
+                                                audio={c}
+                                            />
+                                        </Box>
                                     );
                                 })
                             }
@@ -291,7 +297,7 @@ export default function Dashboard() {
                             Save
                         </Button>
                     </Toolbar>
-                    <Home/>
+                    <Home loggedIn={true}/>
                     </AppBar>
                 </Dialog>
             </Box>

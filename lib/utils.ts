@@ -9,7 +9,7 @@ export const capitalize = (str: string) => {
   return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
-export const audioBufferToWav = (buffer: AudioBuffer): Blob => {
+export const audioBufferToWav = (buffer: AudioBuffer) => {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
   const numFrames = buffer.length;
@@ -44,11 +44,26 @@ export const audioBufferToWav = (buffer: AudioBuffer): Blob => {
           offset += 2;
       }
   }
-
   return new Blob([wavBuffer], { type: "audio/wav" });
 };
 
 export const getBlobUrl = (buffer: AudioBuffer) => {
-  const wavBlob = audioBufferToWav(buffer);
+  const wavBlob = audioBufferToWav(buffer) as Blob;
   return URL.createObjectURL(wavBlob);
+}
+
+export const downloadStory = (audioSrc: string, story: string[]) => {
+  const audioLink = document.createElement('a');
+  audioLink.href = audioSrc;
+  audioLink.download = 'audio-file.wav'; 
+  audioLink.click();
+
+  const textContent = story.join(' ');
+  const textBlob = new Blob([textContent], { type: 'text/plain' });
+  const textLink = document.createElement('a');
+  textLink.href = URL.createObjectURL(textBlob);
+  textLink.download = 'story.txt';
+  textLink.click();
+
+  URL.revokeObjectURL(audioSrc);
 }

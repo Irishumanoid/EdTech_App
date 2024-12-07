@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { synthesizeLongAudio, fetchStoryAudio, deleteStory } from '@/lib/gptGen.mjs';
+import { getStory, synthesizeLongAudio, fetchStoryAudio, deleteStory } from '@/lib/gptGen.mjs';
 import { Child, GPTPrompt } from '@/lib/promptObjs.mjs';
 import { ChildType } from '../../store/features/userStorySlice';
 import { addStory, fetchStory, deleteStoryText } from '@/lib/mongodb';
@@ -10,28 +10,49 @@ interface ChildInfo {
 
 // generate story (store in mongodb), generate audio (store in gcs)
 export const POST = async (request: Request) => {
-    console.log('POST is being invoked');
-    const userInfo = await request.json();
+    const type = request.headers.get('type');
+
     try {
-        const childInfo: ChildInfo = {
-            users: userInfo.users
-        };
+        if (type === 'text') {
+            const userInfo = await request.json();
+            const childInfo: ChildInfo = {
+                users: userInfo.users
+            };
+    
+            let children: Child[] = [];
+            if (childInfo.users.length !== 0) {
+                children = childInfo.users.map(user => new Child(user.name, user.pronoun, user.preferences));
+            }
+            const gptPrompt = new GPTPrompt(children, userInfo.type, userInfo.numMins, userInfo.ageRange, userInfo.plots, userInfo.keywords, userInfo.otherInfo, userInfo.language);
+    
+    
+            const [uuid, story] = await getStory(gptPrompt);
+            if (story) {
+                await addStory(story, uuid as string);
+                return NextResponse.json({message: 'Story generated sucessfully', uuid: uuid}, {status: 201});
+            } else {
+                return NextResponse.json({message: 'Text file not found'}, {status: 404});
+            }
+        } else if (type === 'audio') {
+            const transcript = await request.json();
+            const uuid = request.headers.get('uuid');
+            const userId = request.headers.get('userId');
+            const language = request.headers.get('language');
+            const voiceGender = request.headers.get('voiceGender');
 
-        let children: Child[] = [];
-        if (childInfo.users.length !== 0) {
-            children = childInfo.users.map(user => new Child(user.name, user.pronoun, user.preferences));
-        }
-        const gptPrompt = new GPTPrompt(children, userInfo.type, userInfo.numMins, userInfo.ageRange, userInfo.plots, userInfo.keywords, userInfo.otherInfo, userInfo.language);
-
-
-        const [uuid, story] = await synthesizeLongAudio(gptPrompt, userInfo.voiceGender, request.headers.get('userId'));
-        if (story) {
-            await addStory(story, uuid as string);
+            try {
+                console.log(`transcript: ${transcript}, lang: ${language}, voicegender: ${voiceGender}, uuid: ${uuid}, userId: ${userId}`);
+                await synthesizeLongAudio(transcript, language, voiceGender, uuid, userId);
+                return NextResponse.json({message: 'Audio generated sucessfully', uuid: uuid}, {status: 201});
+            } catch (error) {
+                return NextResponse.json({message: 'Failed to generate content audio'}, {status: 500});
+            }
         } else {
-            return NextResponse.json({message: 'Text file not found'}, {status: 404});
+            console.error('Invalid file type attempted to be accessed');
+            return NextResponse.json({message: 'Invalid file type fetch'}, {status: 415});
         }
 
-        return NextResponse.json({message: 'Content generated sucessfully', uuid: uuid}, {status: 200});
+        
     } catch (error) {
         console.error('An unexpected error occurred: ', error);
         return NextResponse.json({message: 'An unexpected error occurred'}, {status: 500});
