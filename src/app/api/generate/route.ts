@@ -40,9 +40,22 @@ export const POST = async (request: Request) => {
             const language = request.headers.get('language');
             const voiceGender = request.headers.get('voiceGender');
 
+            console.log(`uuid is: ${uuid}`);
+            console.log(`user id is: ${userId}`);
             try {
-                await synthesizeLongAudio(transcript, language, voiceGender, uuid, userId);
-                return NextResponse.json({message: 'Audio generated sucessfully', uuid: uuid}, {status: 201});
+                const response = await synthesizeLongAudio(transcript, language, voiceGender, uuid, userId);
+                // TODO handle if response contains raw audio (not logged in)
+                if (response) {
+                    return new NextResponse(response, {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'audio/wav',
+                            'Content-Disposition': `attachment; filename="${uuid}.wav"`,
+                        },
+                    });
+                } else {
+                    return NextResponse.json({message: 'Audio generated sucessfully', uuid: uuid}, {status: 201});
+                }
             } catch (error) {
                 return NextResponse.json({message: 'Failed to generate content audio'}, {status: 500});
             }

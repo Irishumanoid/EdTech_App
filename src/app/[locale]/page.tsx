@@ -2,11 +2,15 @@
 
 import { useTranslations } from 'next-intl';
 import Button from './components/Button';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const t = useTranslations('');
-  localStorage.setItem('loggedIn', 'n');
   
+  useEffect(() => {
+    localStorage.setItem('userId', '');
+  }, []);
+
   return (
       <div>
         <section className='flex flex-col items-center justify-center py-24'>

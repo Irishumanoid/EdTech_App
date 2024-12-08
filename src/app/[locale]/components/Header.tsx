@@ -16,7 +16,6 @@ export const Header: FC<Props> = ({ locale }) => {
 
   const handleLogout = () => {
     localStorage.setItem('userId', '');
-    localStorage.setItem('loggedIn', 'n');
   }
 
   return (

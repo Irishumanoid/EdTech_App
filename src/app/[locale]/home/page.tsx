@@ -75,6 +75,20 @@ export default function Home() {
         }
     };
 
+    const getAudio = async (response: Response) => {
+        try {
+            const audioContext = new window.AudioContext();
+            const arrayBuffer = await response.arrayBuffer();
+            audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
+                setAudioBuffer(decodedData);
+                setIsAudio(true);
+                setLoading(false);
+            });
+        } catch (error) {
+            console.error('Error decoding audio');
+        }
+    }
+
     //fetch everything from user object and generate story
     const handleUpdate = async (audioGen: boolean) => {
         setLoading(true);
@@ -121,10 +135,7 @@ export default function Home() {
             }
         } else {
             let id = localStorage.getItem('userId');
-            const loggedIn = localStorage.getItem('loggedIn');
-            if (!loggedIn) {
-                id = '';
-            }
+
             const response = await fetch('/api/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': user.requestUuid, 'userId': id as string, 'language': user.language, 'voiceGender': user.voiceGender},
@@ -132,24 +143,18 @@ export default function Home() {
             });
 
             if (response.ok) {
-                const uuid = loggedIn ? `${id}/${user.requestUuid}` : user.requestUuid;
-                const audioGetResponse = await fetch('/api/generate', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': uuid },
-                });
-    
-                if (audioGetResponse.ok) {
-                    try {
-                        const audioContext = new window.AudioContext();
-                        const arrayBuffer = await audioGetResponse.arrayBuffer();
-                        audioContext.decodeAudioData(arrayBuffer, (decodedData) => {
-                            setAudioBuffer(decodedData);
-                            setIsAudio(true);
-                            setLoading(false);
-                        });
-                    } catch (error) {
-                        console.error('Error decoding audio');
+                if (id !== '') {
+                    const uuid = `${id}/${user.requestUuid}`;
+                    const audioGetResponse = await fetch('/api/generate', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': uuid },
+                    });
+        
+                    if (audioGetResponse.ok) {
+                        getAudio(audioGetResponse);
                     }
+                } else {
+                    getAudio(response);
                 }
             }
         }

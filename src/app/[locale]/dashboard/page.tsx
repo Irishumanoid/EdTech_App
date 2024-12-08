@@ -34,7 +34,6 @@ export default function Dashboard() {
 
 
     useEffect(() => {
-        localStorage.setItem('loggedIn', 'y');
         const audioContext = new window.AudioContext();
 
         const fetchStories = async () => {
