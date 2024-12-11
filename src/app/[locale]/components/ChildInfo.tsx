@@ -46,7 +46,7 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
             <Box sx={{ '& > :not(style)': { m: 1 } }} id={`child-info-${index}`}>
                 <TextField
                     id="input-with-icon-textfield"
-                    label={index === 0 ? "Child name" : `Friend ${index} name`}
+                    label={index === 0 ? "Character name" : `Friend ${index} name`}
                     sx={{ position: 'relative', top: '30px', backgroundColor: 'var(--background)' }}
                     slotProps={{
                     input: {
@@ -66,11 +66,12 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
                         <FormControlLabel value='she' control={<Radio />} label='she/her' />
                         <FormControlLabel value='he' control={<Radio />} label='he/him' />
                         <FormControlLabel value='they' control={<Radio />} label='they/them' />
+                        <FormControlLabel value='Other' control={<Radio />} label='Other' />
                     </RadioGroup>
                 </FormControl>
                 <TextField
                     id="standard-multiline-flexible"
-                    label="Preferences"
+                    label="Preferences    "
                     multiline
                     minRows={4}
                     maxRows={4}

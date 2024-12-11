@@ -1,38 +1,33 @@
 'use client'
 import * as React from 'react';
-import Box from '@mui/material/Box';
-
-import { useAppDispatch, useAppSelector } from  '../../store/hooks';
-import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, setLanguage, updateUsers, setVoiceGender, setUuid, resetPlots } from '../../store/features/userStorySlice';
-import Button from '../components/Button';
+import { useEffect, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setType, setNumMins, setAgeRange as setAges, setOtherInfo, setKeywords, 
+         setLanguage, updateUsers, setVoiceGender, setUuid, resetPlots } from '../../store/features/userStorySlice';
 import { ChildInfo } from '../components/ChildInfo';
 import { CheckboxGrid } from '../components/CheckboxGrid';
-import { useEffect, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, TextField, Typography } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import DownloadIcon from '@mui/icons-material/Download';
-import CircularProgress from '@mui/material/CircularProgress';
-import Grid from '@mui/material/Grid2';
+import { getBlobUrl, downloadStory } from '@/lib/utils';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
-import { downloadStory, getBlobUrl } from '@/lib/utils';
- 
 
-//on submit, add everything to gptprompt object
 export default function Home() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
-    const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
+    
+    // Form state
+    const [currentStep, setCurrentStep] = useState(1);
+    const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => handleUserDelete(0)}/>]);
     const [minutes, setMinutes] = useState(1);
-    const [ageRange, setAgeRange] = useState([0, 18]);
+    const [ageRange, setAgeRange] = useState([1, 18]);
+    
+    // Story generation state
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
     const [storyText, setStoryText] = useState(['']);
     const [gotStory, setGotStory] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // reset to default state when page reloaded
+    // Reset state on mount
     useEffect(() => {
         dispatch(setType('story'));
         dispatch(setNumMins(1));
@@ -44,38 +39,56 @@ export default function Home() {
         dispatch(setVoiceGender('Female'));
     }, []);
 
-    const genButtonClick = () => {
-        const newIndex = inputList.length;
-        setInputList((prevList) => [
-            ...prevList,
-            <ChildInfo key={newIndex} index={newIndex} onDelete={() => userDelete(newIndex)} />
-        ]);
-    }
+    // Step navigation
+    const totalSteps = 4;
+    
+    const handleNext = () => {
+        if (currentStep < totalSteps) {
+            setCurrentStep(prev => prev + 1);
+        }
+    };
 
-    const userDelete = (index: number) => {
-        setInputList((prevList) => {
+    const handleBack = () => {
+        if (currentStep > 1) {
+            setCurrentStep(prev => prev - 1);
+        }
+    };
+
+    // User management
+    const handleAddUser = () => {
+        const newIndex = inputList.length;
+        setInputList(prevList => [
+            ...prevList,
+            <ChildInfo key={newIndex} index={newIndex} onDelete={() => handleUserDelete(newIndex)} />
+        ]);
+    };
+
+    const handleUserDelete = (index: number) => {
+        setInputList(prevList => {
             const updatedList = prevList.filter((_, i) => i !== index);
             return updatedList.map((child, i) =>
-                React.cloneElement(child, { index: i, key: i, onDelete: () => userDelete(i) })
+                React.cloneElement(child, { index: i, key: i, onDelete: () => handleUserDelete(i) })
             );
         });
     };
 
-    const handleMinsSliderChange = (event: Event, newValue: number | number[]) => {
+    // Form handlers
+    const handleMinsChange = (event: Event, newValue: number | number[]) => {
         if (typeof newValue === 'number') {
             setMinutes(newValue);
             dispatch(setNumMins(newValue));
         }
     };
 
-    const handleAgeSliderChange = (event: Event, newValue: number | number[]) => {
+    const handleAgeChange = (event: Event, newValue: number | number[]) => {
         if (Array.isArray(newValue)) {
             setAgeRange(newValue as [number, number]);
             dispatch(setAges(newValue));
         }
     };
 
-    const getAudio = async (response: Response) => {
+    // Audio processing
+    const handleAudioProcessing = async (response: Response) => {
         try {
             const audioContext = new window.AudioContext();
             const arrayBuffer = await response.arrayBuffer();
@@ -87,264 +100,330 @@ export default function Home() {
         } catch (error) {
             console.error('Error decoding audio');
         }
-    }
+    };
 
-    //fetch everything from user object and generate story
-    const handleUpdate = async (audioGen: boolean) => {
+    // Story generation
+    const handleGenerate = async (audioGen: boolean) => {
         setLoading(true);
-        if (isAudio) {
-            setIsAudio(false);
-        }
+        if (isAudio) setIsAudio(false);
 
         if (!audioGen) {
-            setStoryText([]);
-            const updatedUsers = user.users.filter((curUser) => 
-                !(curUser.name === "" && curUser.preferences.length === 0 && curUser.pronoun === "")
-            );
-            
-            dispatch(updateUsers({users: updatedUsers}));  
-            console.log(JSON.stringify(user));
-    
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'type': 'text' },
-                body: JSON.stringify(user),
-            });
-    
-            if (response.ok) {
-                const output = await response.json();
-                dispatch(setUuid(output.uuid));
-            
-                const textGetResponse = await fetch('/api/generate', {
-                    method: 'GET',
-                    headers:  { 'Content-Type': 'application/json', 'type': 'text', 'uuid': output.uuid}
-                });
-    
-                if (textGetResponse.ok) {
-                    try {
-                        const arrayBuffer = await textGetResponse.arrayBuffer();
-                        const decoder = new TextDecoder('utf-8');
-                        const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
-                        setStoryText(story);
-                        setLoading(false);
-                        setGotStory(true);
-                    } catch (error) {
-                        console.error('Error decoding text');
-                    }
-                }
-            }
+            await handleTextGeneration();
         } else {
-            let id = localStorage.getItem('userId');
+            await handleAudioGeneration();
+        }
+    };
 
-            const response = await fetch('/api/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': user.requestUuid, 'userId': id as string, 'language': user.language, 'voiceGender': user.voiceGender},
-                body: JSON.stringify(storyText.join(''))
-            });
-
-            if (response.ok) {
-                if (id !== '') {
-                    const uuid = `${id}/${user.requestUuid}`;
-                    const audioGetResponse = await fetch('/api/generate', {
-                        method: 'GET',
-                        headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': uuid },
-                    });
+    const handleTextGeneration = async () => {
+        setStoryText([]);
+        const updatedUsers = user.users.filter(curUser => 
+            !(curUser.name === "" && curUser.preferences.length === 0 && curUser.pronoun === "")
+        );
         
-                    if (audioGetResponse.ok) {
-                        getAudio(audioGetResponse);
-                    }
-                } else {
-                    getAudio(response);
-                }
+        dispatch(updateUsers({users: updatedUsers}));
+
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'type': 'text' },
+            body: JSON.stringify(user),
+        });
+
+        if (response.ok) {
+            const output = await response.json();
+            dispatch(setUuid(output.uuid));
+            await fetchGeneratedText(output.uuid);
+        }
+    };
+
+    const fetchGeneratedText = async (uuid: string) => {
+        const textResponse = await fetch('/api/generate', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json', 'type': 'text', 'uuid': uuid }
+        });
+
+        if (textResponse.ok) {
+            try {
+                const arrayBuffer = await textResponse.arrayBuffer();
+                const decoder = new TextDecoder('utf-8');
+                const story = decoder.decode(arrayBuffer).split(/(?<=([.!?]))\s+/).filter((e) => e.length > 1);
+                setStoryText(story);
+                setLoading(false);
+                setGotStory(true);
+            } catch (error) {
+                console.error('Error decoding text');
             }
         }
-    }
+    };
+
+    const handleAudioGeneration = async () => {
+        const userId = localStorage.getItem('userId');
+        
+        const response = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json', 
+                'type': 'audio', 
+                'uuid': user.requestUuid, 
+                'userId': userId as string,
+                'language': user.language,
+                'voiceGender': user.voiceGender
+            },
+            body: JSON.stringify(storyText.join(''))
+        });
+
+        if (response.ok) {
+            if (userId) {
+                const uuid = `${userId}/${user.requestUuid}`;
+                const audioResponse = await fetch('/api/generate', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json', 'type': 'audio', 'uuid': uuid },
+                });
+
+                if (audioResponse.ok) {
+                    handleAudioProcessing(audioResponse);
+                }
+            } else {
+                handleAudioProcessing(response);
+            }
+        }
+    };
+
+    // Step content rendering
+    const renderStepContent = () => {
+        switch (currentStep) {
+            case 1:
+                return (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-semibold">Character Information</h2>
+                        {inputList}
+                        <button 
+                            onClick={handleAddUser}
+                            className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-white"
+                            aria-label="Add new user"
+                        >
+                            <span>Add User</span>
+                            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                        </button>
+                    </div>
+                );
+            case 2:
+                return (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-semibold">Age and Duration</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Duration (minutes)</label>
+                                <input 
+                                    type="range"
+                                    min={1}
+                                    max={20}
+                                    value={minutes}
+                                    onChange={(e) => handleMinsChange(e as unknown as Event, parseInt(e.target.value))}
+                                    className="w-full"
+                                />
+                                <span className="mt-1 block text-sm">{minutes} minutes</span>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Age Range</label>
+                                <div className="flex gap-4">
+                                    <input 
+                                        type="range"
+                                        min={1}
+                                        max={18}
+                                        value={ageRange[0]}
+                                        onChange={(e) => handleAgeChange(e as unknown as Event, [parseInt(e.target.value), ageRange[1]])}
+                                        className="w-full"
+                                    />
+                                    <input 
+                                        type="range"
+                                        min={1}
+                                        max={18}
+                                        value={ageRange[1]}
+                                        onChange={(e) => handleAgeChange(e as unknown as Event, [ageRange[0], parseInt(e.target.value)])}
+                                        className="w-full"
+                                    />
+                                </div>
+                                <div className="mt-1 flex justify-between text-sm">
+                                    <span>Min: {ageRange[0]}</span>
+                                    <span>Max: {ageRange[1]}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 3:
+                return (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-semibold">Content Preferences</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Content Type</label>
+                                <select 
+                                    onChange={(e) => dispatch(setType(e.target.value))}
+                                    className="w-full rounded-md border border-gray-300 p-2"
+                                >
+                                    <option value="">Select type</option>
+                                    <option value="story">Story</option>
+                                    <option value="podcast">Podcast</option>
+                                    <option value="interactive class">Interactive Class</option>
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input 
+                                    type="checkbox"
+                                    onChange={(e) => dispatch(setKeywords(e.target.checked))}
+                                    className="h-4 w-4 rounded border-gray-300"
+                                />
+                                <label className="text-sm">Generate keywords</label>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 4:
+                return (
+                    <div className="space-y-6">
+                        <h2 className="text-xl font-semibold">Additional Settings</h2>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Language</label>
+                                <select 
+                                    onChange={(e) => dispatch(setLanguage(e.target.value))}
+                                    defaultValue="English"
+                                    className="w-full rounded-md border border-gray-300 p-2"
+                                >
+                                    {['Arabic', 'English', 'French', 'German', 'Japanese', 'Mandarin', 'Spanish', 'Russian'].map(lang => (
+                                        <option key={lang} value={lang}>{lang}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Voice Gender</label>
+                                <select 
+                                    onChange={(e) => dispatch(setVoiceGender(e.target.value))}
+                                    defaultValue="Female"
+                                    className="w-full rounded-md border border-gray-300 p-2"
+                                >
+                                    <option value="Female">Female</option>
+                                    <option value="Male">Male</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-2 block text-sm font-medium">Additional Information</label>
+                                <textarea 
+                                    onChange={e => dispatch(setOtherInfo(e.target.value))}
+                                    className="w-full rounded-md border border-gray-300 p-2"
+                                    rows={3}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
 
     return (
-        <div className='px-32 py-10 text-center text-2xl font-bold'>
-            <label>User preferences</label>
-            <br/><br/>
-            <Box id="outer"
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'flex-start', 
-                    alignItems: 'flex-start',
-                    height: 'auto',
-                    minHeight: '80vh',
-                    padding: 0,
-                }}>
-                <Box id="inner"
-                      sx={{
-                        width: 1200,
-                        height: 'auto',
-                        flexDirection: 'column',
-                        backgroundColor: 'var(--background-secondary)',
-                        padding: '2rem',
-                        borderRadius: '8px',
-                        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
-                        textAlign: 'center',
-                        overflowY: 'visible',
-                    }}>
-                    {inputList}
-                    <IconButton color="primary" aria-label="add" onClick={() => genButtonClick()} sx={{ fontSize: 20 }}>
-                        <AddIcon />
-                        New User
-                    </IconButton>
-                    <Box sx={{ flexGrow: 2 }}>
-                        <Grid container spacing={2}>
-                            <Grid size={3}>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 150, backgroundColor: 'var(--background)' }}>
-                                    <InputLabel id="demo-simple-select-filled-label" >Content Type</InputLabel>
-                                    <Select
-                                    labelId="demo-simple-select-filled-label"
-                                    id="demo-simple-select-filled"
-                                    defaultValue={""}
-                                    onChange={(e) => dispatch(setType(e.target.value as string))}
+        <div className="mx-auto max-w-4xl px-4 py-8">
+            {/* Progress indicator */}
+            <div className="mb-8 flex justify-between">
+                {[1, 2, 3, 4].map((step) => (
+                    <div 
+                        key={step}
+                        className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                            step === currentStep 
+                                ? 'bg-primary text-white' 
+                                : step < currentStep 
+                                ? 'bg-green-200' 
+                                : 'bg-gray-200'
+                        }`}
+                    >
+                        {step}
+                    </div>
+                ))}
+            </div>
+
+            {/* Step content */}
+            <div className="rounded-lg bg-white p-6 shadow-md">
+                {renderStepContent()}
+            </div>
+
+            {/* Navigation buttons */}
+            <div className="mt-6 flex justify-between">
+                <button
+                    onClick={handleBack}
+                    disabled={currentStep === 1}
+                    className="rounded-md bg-gray-200 px-4 py-2 text-gray-700 disabled:opacity-50"
+                >
+                    Back
+                </button>
+                {currentStep === totalSteps ? (
+                    <button
+                        onClick={() => handleGenerate(false)}
+                        disabled={loading}
+                        className="rounded-md bg-primary px-4 py-2 text-white disabled:opacity-50"
+                    >
+                        {loading ? 'Generating...' : 'Generate Story'}
+                    </button>
+                ) : (
+                    <button
+                        onClick={handleNext}
+                        className="rounded-md bg-primary px-4 py-2 text-white"
+                    >
+                        Next
+                    </button>
+                )}
+            </div>
+
+            {/* Results section */}
+            <div className="mt-8 rounded-lg bg-white p-6 shadow-md">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                        <p className="mt-4 text-lg text-gray-600">Generating your story...</p>
+                    </div>
+                ) : (
+                    <>
+                        {isAudio && (
+                            <div className="mb-6 flex items-center gap-4">
+                                <AudioPlayer 
+                                    autoPlay 
+                                    src={getBlobUrl(audioBuffer as AudioBuffer)} 
+                                    onPlay={() => console.log('Playing')}
+                                />
+                                <button
+                                    onClick={() => downloadStory(getBlobUrl(audioBuffer as AudioBuffer), storyText)}
+                                    className="rounded-md bg-primary p-2 text-white"
+                                    aria-label="Download story"
+                                >
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                </button>
+                            </div>
+                        )}
+                        {storyText.length > 0 && (
+                            <div className="space-y-4">
+                                {storyText.map((sentence, index) => (
+                                    <p key={index} className="text-lg leading-relaxed text-gray-700">
+                                        {sentence}
+                                    </p>
+                                ))}
+                                {gotStory && !isAudio && (
+                                    <button
+                                        onClick={() => handleGenerate(true)}
+                                        className="mt-4 rounded-md bg-primary px-4 py-2 text-white"
                                     >
-                                        <MenuItem value="">
-                                            <em>None</em>
-                                        </MenuItem>
-                                        <MenuItem value="story">Story</MenuItem>
-                                        <MenuItem value="podcast">Podcast</MenuItem>
-                                        <MenuItem value="interactive class">Interactive Class</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-                            <Grid size={3}>
-                                <Box sx={{ width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <Typography gutterBottom>Duration (minutes)</Typography>
-                                    <Slider 
-                                    value={minutes}
-                                    onChange={handleMinsSliderChange}
-                                    valueLabelDisplay="auto" 
-                                    min={1} 
-                                    max={20} 
-                                    />
-                                </Box>
-                            </Grid>
-                            <Grid size={3}>
-                                <Box sx={{ width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <Typography gutterBottom>Age range (min-max)</Typography>
-                                    <Slider
-                                    value={ageRange}
-                                    onChange={handleAgeSliderChange}
-                                    valueLabelDisplay="auto"
-                                    min={1}
-                                    max={18}
-                                    />
-                                    <Typography>Min: {ageRange[0]}</Typography>
-                                    <Typography>Max: {ageRange[1]}</Typography>
-                                </Box>
-                            </Grid>
-                            <Grid size={3}>
-                                <Typography gutterBottom> Generate keywords </Typography>
-                                <Checkbox onChange={(e) => dispatch(setKeywords(e.target.checked))}/>
-                            </Grid>
-                        </Grid>
-                    </Box>
-                    <Typography variant='h6'>Story Archetype</Typography>
-                    <Accordion sx={{backgroundColor: 'var(--background)'}}>
-                        <AccordionSummary
-                        expandIcon={<ArrowDownwardIcon />}
-                        aria-controls="panel1-content"
-                        id="panel1-header"
-                        >
-                        </AccordionSummary>
-                        <AccordionDetails>
-                        <CheckboxGrid 
-                            numCols={4} 
-                            entries={
-                            ['Hero\'s journey', 'Coming of Age', 'Rags to riches', 'Underdog', 'Quest', 'Sacrifice', 'Mystery', 
-                            'Chosen one', 'Fish out of water', 'Parallel worlds', 'Dystopia', 'Survival', 'Discovery', 'Identity Crisis',
-                            'Family drama', 'Time travel', 'Apocalypse', 'Power and corruption', 'Tragedy', 'Reincarnation', 'Framing device',
-                            'Stranger in strange land', 'Escape from death', 'Forbidden knowledge', 'Society versus individual', 
-                            'Body swap', 'Prophecy', 'Seeking home', 'Wandering hero', 'Time loop', 'Love at first sight', 'Human versus nature',
-                            'Heir to the throne', 'Corrupting influence', 'Cursed object', 'Mistaken identity', 'Immortality quest',
-                            'Sworn enemies', 'Man versus machine', 'Forbidden power', 'Madness and sanity', 'Race against time',
-                            'Forbidden journey', 'Crime and punishment', 'Parallel lives', 'Generation gaps', 'Navigating the afterlife',
-                            'Puppet master', 'Enchanted forest', 'Lost civilization'
-                            ]}/>
-                        </AccordionDetails>
-                    </Accordion>
-                    <br/>
-                    <Grid container spacing={2}>
-                        <Grid size={6}>
-                            <TextField sx={{ width:'640px', backgroundColor: 'var(--background)' }}
-                                id="filled-basic" 
-                                label="Other information" 
-                                variant="filled" 
-                                multiline
-                                minRows={2}
-                                maxRows={3}
-                                onChange={e => dispatch(setOtherInfo(e.target.value))}
-                            />
-                        </Grid>
-                        <Grid size={6}>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 250, backgroundColor: 'var(--background)' }}>
-                                <InputLabel id="demo-simple-select-filled-label">Language</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-filled-label"
-                                id="demo-simple-select-filled"
-                                defaultValue={"English"}
-                                onChange={(e) => dispatch(setLanguage(e.target.value as string))}
-                                >
-                                <MenuItem value="Arabic">Arabic</MenuItem>
-                                <MenuItem value="English">English</MenuItem>
-                                <MenuItem value="French">French</MenuItem>
-                                <MenuItem value="German">German</MenuItem>
-                                <MenuItem value="Japanese">Japanese</MenuItem>
-                                <MenuItem value="Mandarin">Mandarin</MenuItem>
-                                <MenuItem value="Spanish">Spanish</MenuItem>
-                                <MenuItem value="Russian">Russian</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 100, backgroundColor: 'var(--background)' }}>
-                                <InputLabel id="demo-simple-select-filled-label">Voice gender</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-filled-label"
-                                id="demo-simple-select-filled"
-                                defaultValue={"Female"}
-                                onChange={(e) => dispatch(setVoiceGender(e.target.value as string))}
-                                >
-                                <MenuItem value="Female">Female</MenuItem>
-                                <MenuItem value="Male">Male</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <br/>
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-                        <Button 
-                            style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
-                            rounded 
-                            size='large' 
-                            onClick={() => handleUpdate(gotStory ? true : false)}> 
-                                {gotStory ? 'Generate audio' : 'Generate text'}
-                        </Button>
-                        <Box sx={{ width: 48, height: 48, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            {loading && <CircularProgress size={40} />}
-                        </Box>
-                    </Box>
-                    <br/>
-                    <br/>
-                    <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
-                        {isAudio && 
-                            <Stack direction='row' spacing={2} width='600px'>
-                                <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>
-                                <DownloadIcon fontSize='large' sx={{ cursor: 'pointer' }} onClick={() => downloadStory(getBlobUrl(audioBuffer as AudioBuffer), storyText)}/>
-                            </Stack>
-                        }
-                    </Box>
-                    <br/>
-                    {storyText.length !== 0 && storyText.map((sentence, index) => {
-                        return (
-                        <div key={index}>
-                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
-                        </div>
-                        );
-                    })}
-                </Box>  
-            </Box>
+                                        Generate Audio
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }
