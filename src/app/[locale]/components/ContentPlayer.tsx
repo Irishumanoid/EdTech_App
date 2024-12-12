@@ -1,4 +1,4 @@
-import { Box, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, Slide, Stack, TextField, Typography } from "@mui/material";
 import LaunchIcon from '@mui/icons-material/Launch';
 import ShareIcon from '@mui/icons-material/Share';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -7,8 +7,9 @@ import 'react-h5-audio-player/lib/styles.css';
 import { getBlobUrl } from "@/lib/utils";
 import Button from "./Button";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useState, useMemo } from "react";
+import { useState, useMemo, forwardRef } from "react";
 import { downloadStory } from "@/lib/utils";
+import { TransitionProps } from "@mui/material/transitions";
 
 interface ContentPlayerProps {
     contentName: string,
@@ -18,11 +19,23 @@ interface ContentPlayerProps {
     onDelete: (index: number) => void,
 }
 
+const Transition = forwardRef(function Transition(
+    props: TransitionProps & {
+      children: React.ReactElement<any, any>;
+    },
+    ref: React.Ref<unknown>,
+  ) {
+    return <Slide direction="up" ref={ref} {...props} />;
+});
+
 //content name, duration, launch play button (if pressed, launch audio player, when pressed again, close audio player), share button
 export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: ContentPlayerProps) => {
     const [launchPlayer, setLaunchPlayer] = useState(false);
     const [story, setStory] = useState(['']);
     const [showTranscript, setShowTranscript] = useState(false);
+    const [storyName, setStoryName] = useState(contentName);
+    const [tempStoryName, setTempStoryName] = useState('');
+    const [popupOpen, setPopupOpen] = useState(false);
 
     const duration = audio.length / audio.sampleRate; // seconds
     const minutes = Math.floor(duration / 60);
@@ -53,6 +66,21 @@ export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: Co
             }
         }
     }
+
+    const handleClickOpen = () => {
+        setPopupOpen(true);
+      };
+    
+      const handleClose = async (save: boolean) => {
+        if (save && tempStoryName !== '') {
+            setStoryName(tempStoryName);
+            await fetch('/api/story', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'storyId': storyId, 'name': storyName }
+            });
+        }
+        setPopupOpen(false);
+      };
  
     return (
         <Box sx={{
@@ -73,7 +101,13 @@ export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: Co
                 <Stack direction='row' spacing={2} alignItems='center'>
                     <Stack direction='row' spacing={4} paddingRight={launchPlayer ? '70px' : '220px'} alignItems='center'>
                         <Stack spacing={0.5} alignItems='center' width='150px'>
-                            <Typography fontSize={20} sx={{ color: 'black' }}> {contentName} </Typography>
+                            <Typography 
+                                fontSize={20} 
+                                onClick={() => handleClickOpen()} 
+                                style={{ cursor: "pointer" }}
+                                sx={{ color: 'black' }}> 
+                                    {storyName} 
+                            </Typography>
                             {launchPlayer &&
                                 <Button rounded style={{ fontSize: '10pt' }} onClick={() => fetchTranscript()}> 
                                     {showTranscript ? 'Hide transcript' : 'Show transcript'}
@@ -114,6 +148,28 @@ export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: Co
                         );
                     })}
             </Stack>
+            <Dialog
+                open={popupOpen}
+                TransitionComponent={Transition}
+                keepMounted
+                onClose={handleClose}
+                aria-describedby="alert-dialog-slide-description">
+                <Box 
+                    display="flex" 
+                    flexDirection="column" 
+                    alignItems="center" 
+                    justifyContent="center"
+                    padding={2}>
+                    <DialogTitle>{"Type new story name below"}</DialogTitle>
+                    <DialogContent>
+                        <TextField onChange={e => setTempStoryName(e.target.value)}/>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => handleClose(false)}>Cancel</Button>
+                        <Button onClick={() => handleClose(true)}>Save</Button>
+                    </DialogActions>
+                </Box>
+            </Dialog>
         </Box>
     );
 }

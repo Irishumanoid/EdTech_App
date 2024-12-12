@@ -98,7 +98,7 @@ export const GET = async (request: Request) => {
                 return NextResponse.json({message: 'Audio file not found'}, {status: 404});
             }
         } else if (fetchType == 'text') {
-            const output = await fetchStory(uuid);
+            const output = await fetchStory(uuid, false);
             const story = JSON.parse(output?.body || '{"content": ""}').content;
             if (story) {
                 return new NextResponse(story, {
@@ -111,8 +111,12 @@ export const GET = async (request: Request) => {
             } else {
                 return NextResponse.json({message: 'Text file not found'}, {status: 404});
             }
+        } else if (fetchType == 'storyName') {
+            const output = await fetchStory(uuid, true);
+            const storyName = JSON.parse(output?.body || '{"content": ""}').content;
+            return NextResponse.json({message: 'Successfully fetched story name', name: storyName}, {status: 200});
         } else {
-            console.error('Invalid file type attempted to be accessed');
+            console.error('Invalid fetch type attempted to be accessed');
             return NextResponse.json({message: 'Invalid file type fetch'}, {status: 415});
         }
     } catch (error) {

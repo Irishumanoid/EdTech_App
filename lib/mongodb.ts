@@ -90,16 +90,44 @@ export const addStory = async (text: string, uuid?: string) => {
     }
 }
 
-export const fetchStory = async (uuid: string) => {
+export const fetchStory = async (uuid: string, nameOnly: boolean) => {
     try {
         client.connect();
         const stories = client.db('users').collection('stories');
         const story = await stories.findOne({uuid});
+        if (nameOnly) {
+            const name = story?.name;
+            return {
+                statusCode: 200,
+                body: JSON.stringify( {message: 'Fetched story name', content: name ? name : ''} )
+            };
+        } else {
+            return {
+                statusCode: 200,
+                body: JSON.stringify( {message: 'Fetched story', content: story?.text} )
+            };
+        }
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({message: 'Fetched story', content: story?.text})
-        };
+export const setStoryName = async (uuid: string, name: string) => {
+    try {
+        client.connect();
+        const stories = client.db('users').collection('stories');
+        const story = await stories.updateOne({uuid}, {$set: {name}});
+        if (story.modifiedCount === 1) {
+            return {
+                statusCode: 200,
+                body: JSON.stringify( {message: 'Set story name for ', uuid} )
+            };
+        } else {
+            return {
+                statusCode: 400,
+                body: JSON.stringify( {message: 'Failed to set story name'} )
+            };
+        }
     } catch (err) {
         console.error('Error:', err);
     }
@@ -113,12 +141,12 @@ export const deleteStoryText = async (uuid: string) => {
         if (story.deletedCount === 1) {
             return {
                 statusCode: 200,
-                body: JSON.stringify({message: `Deleted story ${uuid}`})
+                body: JSON.stringify( {message: `Deleted story ${uuid}`} )
             };
         }
         return {
             statusCode: 400,
-            body: JSON.stringify({message: `Failed to deleted story ${uuid}`})
+            body: JSON.stringify( {message: `Failed to deleted story ${uuid}`} )
         };
     } catch (err) {
         console.error('Error:', err);
