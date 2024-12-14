@@ -8,29 +8,31 @@ import Button from '../components/Button';
 import { ChildInfo } from '../components/ChildInfo';
 import { CheckboxGrid } from '../components/CheckboxGrid';
 import { useEffect, useState } from 'react';
-import { Accordion, AccordionDetails, AccordionSummary, Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Checkbox, FormControl, IconButton, InputLabel, MenuItem, Select, Slider, Stack, TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
-import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import DownloadIcon from '@mui/icons-material/Download';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid2';
 import AudioPlayer from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import { downloadStory, getBlobUrl } from '@/lib/utils';
+import { ProgressStepper, steps } from '../components/ProgressStepper';
  
-
+const minChoices = [1, 2, 5, 10];
 //on submit, add everything to gptprompt object
 export default function Home() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
     const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
-    const [minutes, setMinutes] = useState(1);
+    const [minsStates, setMinsStates] = useState(new Map(Array.from(minChoices).map(choice => [choice, false])));
     const [ageRange, setAgeRange] = useState([0, 18]);
     const [isAudio, setIsAudio] = useState(false);
     const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
     const [storyText, setStoryText] = useState(['']);
     const [gotStory, setGotStory] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [activeStep, setActiveStep] = useState(0);
+    const [entriesVisible, setEntriesVisible] = useState(true);
 
     // reset to default state when page reloaded
     useEffect(() => {
@@ -42,7 +44,13 @@ export default function Home() {
         dispatch(setOtherInfo(''));
         dispatch(setLanguage('English'));
         dispatch(setVoiceGender('Female'));
-    }, []);
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (activeStep !== steps.length) {
+            setEntriesVisible(true);
+        }
+    }, [activeStep]);
 
     const genButtonClick = () => {
         const newIndex = inputList.length;
@@ -61,12 +69,12 @@ export default function Home() {
         });
     };
 
-    const handleMinsSliderChange = (event: Event, newValue: number | number[]) => {
-        if (typeof newValue === 'number') {
-            setMinutes(newValue);
-            dispatch(setNumMins(newValue));
-        }
-    };
+    const handleMinsChange = (input: number) => {
+        dispatch(setNumMins(input));
+        const keys = minsStates.keys();
+        const newMap = new Map(Array.from(minChoices).map(choice => [choice, choice === input]));
+        setMinsStates(newMap);
+    }
 
     const handleAgeSliderChange = (event: Event, newValue: number | number[]) => {
         if (Array.isArray(newValue)) {
@@ -91,6 +99,7 @@ export default function Home() {
 
     //fetch everything from user object and generate story
     const handleUpdate = async (audioGen: boolean) => {
+        setEntriesVisible(false);
         setLoading(true);
         if (isAudio) {
             setIsAudio(false);
@@ -162,8 +171,10 @@ export default function Home() {
 
     return (
         <div className='px-32 py-10 text-center text-2xl font-bold'>
-            <label>User preferences</label>
-            <br/><br/>
+            <Typography variant="h5" gutterBottom fontWeight='bold' paddingBottom={5}> 
+                User Preferences
+            </Typography>
+            <ProgressStepper activeStep={activeStep} setActiveStep={setActiveStep}/>
             <Box id="outer"
                 sx={{
                     display: 'flex',
@@ -175,7 +186,8 @@ export default function Home() {
                 }}>
                 <Box id="inner"
                       sx={{
-                        width: 1200,
+                        width: '100%',
+                        maxWidth: 1200,
                         height: 'auto',
                         flexDirection: 'column',
                         backgroundColor: 'var(--background-secondary)',
@@ -185,22 +197,37 @@ export default function Home() {
                         textAlign: 'center',
                         overflowY: 'visible',
                     }}>
-                    {inputList}
-                    <IconButton color="primary" aria-label="add" onClick={() => genButtonClick()} sx={{ fontSize: 20 }}>
-                        <AddIcon />
-                        New User
-                    </IconButton>
-                    <Box sx={{ flexGrow: 2 }}>
-                        <Grid container spacing={2}>
-                            <Grid size={3}>
-                                <FormControl variant="filled" sx={{ m: 1, minWidth: 150, backgroundColor: 'var(--background)' }}>
-                                    <InputLabel id="demo-simple-select-filled-label" >Content Type</InputLabel>
+                    {activeStep === 0 &&
+                        <Box>
+                            {inputList}
+                            <IconButton color="primary" aria-label="add" onClick={() => genButtonClick()} sx={{ fontSize: 20 }}>
+                                <AddIcon />
+                                New User
+                            </IconButton>
+                        </Box>
+                    }
+                    {activeStep === 1 &&
+                        <Stack
+                            spacing={4}
+                            sx={{
+                                width: '100%',
+                                maxWidth: '1200px',
+                                margin: '0 auto',
+                                alignItems: 'center',
+                            }}>
+                            <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+                                <FormControl
+                                    variant="filled"
+                                    sx={{
+                                        minWidth: 240,
+                                        backgroundColor: 'var(--background)',
+                                    }}>
+                                    <InputLabel id="content-type-label">Content Type</InputLabel>
                                     <Select
-                                    labelId="demo-simple-select-filled-label"
-                                    id="demo-simple-select-filled"
-                                    defaultValue={""}
-                                    onChange={(e) => dispatch(setType(e.target.value as string))}
-                                    >
+                                        labelId="content-type-label"
+                                        id="content-type-select"
+                                        defaultValue=""
+                                        onChange={(e) => dispatch(setType(e.target.value))}>
                                         <MenuItem value="">
                                             <em>None</em>
                                         </MenuItem>
@@ -209,140 +236,148 @@ export default function Home() {
                                         <MenuItem value="interactive class">Interactive Class</MenuItem>
                                     </Select>
                                 </FormControl>
-                            </Grid>
-                            <Grid size={3}>
-                                <Box sx={{ width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <Typography gutterBottom>Duration (minutes)</Typography>
-                                    <Slider 
-                                    value={minutes}
-                                    onChange={handleMinsSliderChange}
-                                    valueLabelDisplay="auto" 
-                                    min={1} 
-                                    max={20} 
+                                <Stack direction="row" alignItems="center" spacing={1}>
+                                    <Typography>Generate keywords</Typography>
+                                    <Checkbox onChange={(e) => dispatch(setKeywords(e.target.checked))} />
+                                </Stack>
+                            </Stack>
+                            <Box sx={{ textAlign: 'center', width: '100%' }}>
+                                <Typography gutterBottom>Duration (minutes)</Typography>
+                                <Stack direction="row" spacing={1} justifyContent="center">
+                                    {minChoices.map((num) => (
+                                        <Button
+                                            key={num}
+                                            color="success"
+                                            disabled={loading}
+                                            onClick={() => handleMinsChange(num)}
+                                            style={{backgroundColor: minsStates.get(num) ? 'var(--button)' : 'var(--logo-shadow)'}}
+                                            >
+                                            {num}
+                                        </Button>
+                                    ))}
+                                    <TextField
+                                        type="number"
+                                        placeholder="Custom"
+                                        inputProps={{ min: 1, max: 15 }}
+                                        onChange={(e) => handleMinsChange(Number(e.target.value))}
+                                        sx={{ width: 110 }}
                                     />
-                                </Box>
-                            </Grid>
-                            <Grid size={3}>
-                                <Box sx={{ width: 220, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                    <Typography gutterBottom>Age range (min-max)</Typography>
-                                    <Slider
+                                </Stack>
+                            </Box>
+                            <Box sx={{ textAlign: 'center', width: '100%' }}>
+                                <Typography gutterBottom>Age Range (min-max)</Typography>
+                                <Slider
                                     value={ageRange}
                                     onChange={handleAgeSliderChange}
                                     valueLabelDisplay="auto"
                                     min={1}
                                     max={18}
-                                    />
+                                    sx={{ maxWidth: 300, margin: '0 auto' }}/>
+                                <Stack direction="row" justifyContent="space-between" sx={{ maxWidth: 300, margin: '0 auto' }}>
                                     <Typography>Min: {ageRange[0]}</Typography>
                                     <Typography>Max: {ageRange[1]}</Typography>
-                                </Box>
-                            </Grid>
-                            <Grid size={3}>
-                                <Typography gutterBottom> Generate keywords </Typography>
-                                <Checkbox onChange={(e) => dispatch(setKeywords(e.target.checked))}/>
-                            </Grid>
-                        </Grid>
-                    </Box>
-                    <Typography variant='h6'>Story Archetype</Typography>
-                    <Accordion sx={{backgroundColor: 'var(--background)'}}>
-                        <AccordionSummary
-                        expandIcon={<ArrowDownwardIcon />}
-                        aria-controls="panel1-content"
-                        id="panel1-header"
-                        >
-                        </AccordionSummary>
-                        <AccordionDetails>
-                        <CheckboxGrid 
-                            numCols={4} 
-                            entries={
-                            ['Hero\'s journey', 'Coming of Age', 'Rags to riches', 'Underdog', 'Quest', 'Sacrifice', 'Mystery', 
-                            'Chosen one', 'Fish out of water', 'Parallel worlds', 'Dystopia', 'Survival', 'Discovery', 'Identity Crisis',
-                            'Family drama', 'Time travel', 'Apocalypse', 'Power and corruption', 'Tragedy', 'Reincarnation', 'Framing device',
-                            'Stranger in strange land', 'Escape from death', 'Forbidden knowledge', 'Society versus individual', 
-                            'Body swap', 'Prophecy', 'Seeking home', 'Wandering hero', 'Time loop', 'Love at first sight', 'Human versus nature',
-                            'Heir to the throne', 'Corrupting influence', 'Cursed object', 'Mistaken identity', 'Immortality quest',
-                            'Sworn enemies', 'Man versus machine', 'Forbidden power', 'Madness and sanity', 'Race against time',
-                            'Forbidden journey', 'Crime and punishment', 'Parallel lives', 'Generation gaps', 'Navigating the afterlife',
-                            'Puppet master', 'Enchanted forest', 'Lost civilization'
-                            ]}/>
-                        </AccordionDetails>
-                    </Accordion>
-                    <br/>
-                    <Grid container spacing={2}>
-                        <Grid size={6}>
-                            <TextField sx={{ width:'640px', backgroundColor: 'var(--background)' }}
-                                id="filled-basic" 
-                                label="Other information" 
-                                variant="filled" 
-                                multiline
-                                minRows={2}
-                                maxRows={3}
-                                onChange={e => dispatch(setOtherInfo(e.target.value))}
-                            />
-                        </Grid>
-                        <Grid size={6}>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 250, backgroundColor: 'var(--background)' }}>
-                                <InputLabel id="demo-simple-select-filled-label">Language</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-filled-label"
-                                id="demo-simple-select-filled"
-                                defaultValue={"English"}
-                                onChange={(e) => dispatch(setLanguage(e.target.value as string))}
-                                >
-                                <MenuItem value="Arabic">Arabic</MenuItem>
-                                <MenuItem value="English">English</MenuItem>
-                                <MenuItem value="French">French</MenuItem>
-                                <MenuItem value="German">German</MenuItem>
-                                <MenuItem value="Japanese">Japanese</MenuItem>
-                                <MenuItem value="Mandarin">Mandarin</MenuItem>
-                                <MenuItem value="Spanish">Spanish</MenuItem>
-                                <MenuItem value="Russian">Russian</MenuItem>
-                                </Select>
-                            </FormControl>
-                            <FormControl variant="filled" sx={{ m: 1, minWidth: 100, backgroundColor: 'var(--background)' }}>
-                                <InputLabel id="demo-simple-select-filled-label">Voice gender</InputLabel>
-                                <Select
-                                labelId="demo-simple-select-filled-label"
-                                id="demo-simple-select-filled"
-                                defaultValue={"Female"}
-                                onChange={(e) => dispatch(setVoiceGender(e.target.value as string))}
-                                >
-                                <MenuItem value="Female">Female</MenuItem>
-                                <MenuItem value="Male">Male</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </Grid>
-                    </Grid>
-                    <br/>
-                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
-                        <Button 
-                            style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
-                            rounded 
-                            size='large' 
-                            onClick={() => handleUpdate(gotStory ? true : false)}> 
-                                {gotStory ? 'Generate audio' : 'Generate text'}
-                        </Button>
-                        <Box sx={{ width: 48, height: 48, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            {loading && <CircularProgress size={40} />}
+                                </Stack>
+                            </Box>
+                        </Stack>
+                    }
+                    {activeStep === 2 &&
+                        <Box>
+                            <Typography variant='h5'>Plot Archetypes</Typography>
+                            <Typography fontSize={15} paddingBottom={2}> Choose at most 5 themes for your generated content to follow </Typography>
+                                <CheckboxGrid 
+                                    numCols={4} 
+                                    entries={
+                                    ['Hero\'s journey', 'Coming of Age', 'Rags to riches', 'Underdog', 'Quest', 'Sacrifice', 'Mystery', 
+                                    'Chosen one', 'Fish out of water', 'Parallel worlds', 'Dystopia', 'Survival', 'Discovery', 'Identity Crisis',
+                                    'Time travel', 'Apocalypse', 'Power and corruption', 'Tragedy', 'Forbidden knowledge', 'Society versus individual', 
+                                    'Body swap', 'Prophecy', 'Wandering hero', 'Time loop', 'Love at first sight', 'Human versus nature',
+                                    'Heir to the throne', 'Cursed object', 'Immortality quest', 'Forbidden power', 'Race against time',
+                                    'Forbidden journey', 'Crime and punishment', 'Parallel lives', 'Generation gaps', 'Lost civilization'
+                                ]}/>
                         </Box>
-                    </Box>
-                    <br/>
-                    <br/>
-                    <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
-                        {isAudio && 
-                            <Stack direction='row' spacing={2} width='600px'>
-                                <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>
-                                <DownloadIcon fontSize='large' sx={{ cursor: 'pointer' }} onClick={() => downloadStory(getBlobUrl(audioBuffer as AudioBuffer), storyText)}/>
-                            </Stack>
-                        }
-                    </Box>
-                    <br/>
-                    {storyText.length !== 0 && storyText.map((sentence, index) => {
-                        return (
-                        <div key={index}>
-                            <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
-                        </div>
-                        );
-                    })}
+                    }
+                    {activeStep === 3 &&
+                        <Box>
+                            {entriesVisible && 
+                                <Grid container spacing={2}>
+                                <Grid size={6}>
+                                    <TextField sx={{ width:'640px', backgroundColor: 'var(--background)' }}
+                                        id="filled-basic" 
+                                        label="Other information" 
+                                        variant="filled" 
+                                        multiline
+                                        minRows={2}
+                                        maxRows={3}
+                                        onChange={e => dispatch(setOtherInfo(e.target.value))}
+                                    />
+                                </Grid>
+                                <Grid size={6}>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 250, backgroundColor: 'var(--background)' }}>
+                                        <InputLabel id="demo-simple-select-filled-label">Language</InputLabel>
+                                        <Select
+                                        labelId="demo-simple-select-filled-label"
+                                        id="demo-simple-select-filled"
+                                        defaultValue={"English"}
+                                        onChange={(e) =>  dispatch(setLanguage(e.target.value as string))}
+                                        >
+                                        <MenuItem value="Arabic">Arabic</MenuItem>
+                                        <MenuItem value="English">English</MenuItem>
+                                        <MenuItem value="French">French</MenuItem>
+                                        <MenuItem value="German">German</MenuItem>
+                                        <MenuItem value="Japanese">Japanese</MenuItem>
+                                        <MenuItem value="Mandarin">Mandarin</MenuItem>
+                                        <MenuItem value="Spanish">Spanish</MenuItem>
+                                        <MenuItem value="Russian">Russian</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                    <FormControl variant="filled" sx={{ m: 1, minWidth: 100, backgroundColor: 'var(--background)' }}>
+                                        <InputLabel id="demo-simple-select-filled-label">Voice gender</InputLabel>
+                                        <Select
+                                        labelId="demo-simple-select-filled-label"
+                                        id="demo-simple-select-filled"
+                                        defaultValue={"Female"}
+                                        onChange={(e) => dispatch(setVoiceGender(e.target.value as string))}
+                                        >
+                                        <MenuItem value="Female">Female</MenuItem>
+                                        <MenuItem value="Male">Male</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </Grid>
+                            }
+                        <br/>
+                        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2 }}>
+                            <Button 
+                                style={{ backgroundColor: loading ? '#D3D3D3' : '#4CAF50', color: '#FFF' }} 
+                                rounded 
+                                size='large' 
+                                onClick={() => handleUpdate(gotStory ? true : false)}> 
+                                    {gotStory ? 'Generate audio' : 'Generate text'}
+                            </Button>
+                            <Box sx={{ width: 48, height: 48, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                {loading && <CircularProgress size={40} />}
+                            </Box>
+                        </Box>
+                        <br/>
+                        <br/>
+                        <Box sx={{width: '600px', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto' }}>  
+                            {isAudio && 
+                                <Stack direction='row' spacing={2} width='600px'>
+                                    <AudioPlayer autoPlay src={getBlobUrl(audioBuffer as AudioBuffer)} onPlay={() => console.log('Playing')}/>
+                                    <DownloadIcon fontSize='large' sx={{ cursor: 'pointer' }} onClick={() => downloadStory(getBlobUrl(audioBuffer as AudioBuffer), storyText)}/>
+                                </Stack>
+                            }
+                        </Box>
+                        <br/>
+                        {storyText.length !== 0 && storyText.map((sentence, index) => {
+                            return (
+                            <Box key={index}>
+                                <Typography variant="body1" gutterBottom fontSize={22}> {sentence} </Typography>
+                            </Box>
+                            );
+                        })}
+                        </Box>
+                    }
                 </Box>  
             </Box>
         </div>

@@ -11,13 +11,23 @@ interface CheckboxGridProps {
 
 export const CheckboxGrid = ({ numCols, entries }: CheckboxGridProps) => {
     const dispatch = useAppDispatch();
+    const [numChecked, setNumChecked] = useState(0);
+    const [states, setStates] = useState(new Map(Array.from(entries).map(key => [key, false])));
 
     const handleCheckbox = (checked: boolean, value: string) => {
+        const newStates: Map<string, boolean> = states;
         if (checked) {
-            dispatch(addPlot(value));
+            if (numChecked < 5) {
+                dispatch(addPlot(value));
+                setNumChecked(numChecked + 1);
+                newStates.set(value, true);
+            }
         } else {
             dispatch(removePlot(value));
+            setNumChecked(numChecked - 1);
+            newStates.set(value, false);
         }
+        setStates(newStates);
     }
 
     return (
@@ -26,7 +36,8 @@ export const CheckboxGrid = ({ numCols, entries }: CheckboxGridProps) => {
                 {entries.map((entry, index) => (
                     <Grid key={index} size={12 / numCols}>
                         <FormControlLabel
-                            control={<Checkbox onChange={e => handleCheckbox(e.target.checked, entry)}/>}
+                            control=
+                                {<Checkbox checked={states.get(entry)} onChange={e => handleCheckbox(e.target.checked, entry)}/>}
                             label={entry}
                             style={{ display: 'flex', alignItems: 'center' }}
                         />

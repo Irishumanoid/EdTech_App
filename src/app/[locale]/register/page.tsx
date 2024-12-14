@@ -42,23 +42,25 @@ export default function Register() {
     } else {
       setPasswordConfError('');
     }
+    
+    if (emailError || passwordError || passwordConfError) {
+      return;
+    }
 
-    if ([passwordError, passwordConfError, emailError].every(e => e === '')) {
-      try {
-        const response = await fetch('/api/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, username, password }),
-        });
-        const data = await response.json();
-        // make sure it doesn't move on if identical user exists
-        setMessage(data.message);
-        if (response.ok && !data.message?.toString().includes('User already exists')) { 
-          router.push('/login');
-        }
-      } catch (err) {
-        console.error('Error occurred: ', err);
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, username, password }),
+      });
+      const data = await response.json();
+      
+      setMessage(data.message);
+      if (response.ok && !data.message?.toString().includes('User already exists')) { 
+        router.push('/login');
       }
+    } catch (err) {
+      console.error('Error occurred: ', err);
     }
   }
 

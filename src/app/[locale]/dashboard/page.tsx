@@ -10,7 +10,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { ContentPlayer } from "../components/ContentPlayer";
 import { TransitionProps } from "@mui/material/transitions";
 import Home from "../home/page";
-import { ProfileUpdater } from "../components/ProfileUpdater";
 
 const theme = createTheme({
     typography: {
@@ -29,12 +28,12 @@ const Transition = forwardRef(function Transition(
 
 export default function Dashboard() {
     const [popupOpen, setPopupOpen] = useState(false);
-    const [profileEdit, setProfileEdit] = useState(false);
     const [ids, setIds] = useState(['']);
-    const [idNameMap, setIdNameMap] = useState(new Map());
+    const [nameMap, setNameMap] = useState(new Map<string, string>()); // maps ids to name
     const [content, setContent] = useState<AudioBuffer[] | null>(null);
     const [loading, setLoading] = useState(true);
 
+    
 
     useEffect(() => {
         const audioContext = new window.AudioContext();
@@ -55,6 +54,27 @@ export default function Dashboard() {
                 const response = await idsGetResponse.json();
                 const ids: string[] = response.storyIds;
                 setIds(ids);
+
+                const idsToNames: Map<string, string> = new Map(await Promise.all(
+                    ids.map(async (id): Promise<[string, string]> => {
+                        const nameResponse = await fetch('/api/generate', {
+                            method: 'GET',
+                            headers: { 
+                                'Content-Type': 'application/json', 
+                                'uuid': id, 
+                                'type': 'storyName' 
+                            }
+                        });
+
+                        if (nameResponse.ok) {
+                            const response = await nameResponse.json();
+                            return [id, response.name];
+                        } else {
+                            throw new Error(`Failed to fetch story name for id ${id}`);
+                        }
+                    })
+                ));
+                setNameMap(idsToNames);
     
                 try {
                     const decodedDataArray: AudioBuffer[] = await Promise.all(
@@ -67,24 +87,6 @@ export default function Dashboard() {
                                     'type': 'audio' 
                                 }
                             });
-
-                            const nameGetResponse = await fetch('/api/generate', {
-                                method: 'GET',
-                                headers: { 
-                                    'Content-Type': 'application/json', 
-                                    'uuid': id, 
-                                    'type': 'storyName' 
-                                }
-                            });
-
-                            if (nameGetResponse.ok) {
-                                const json = await nameGetResponse.json();
-                                setIdNameMap(prevMap => {
-                                    const newMap = new Map(prevMap);
-                                    newMap.set(id, json.name);
-                                    return newMap;
-                                });
-                            }
             
                             if (audioGetResponse.ok) {
                                 const arrayBuffer = await audioGetResponse.arrayBuffer();
@@ -163,12 +165,10 @@ export default function Dashboard() {
                         marginBottom: '2rem', 
                     }}
                 >
-                    <Image src={'/placeholder_person.jpg'} alt='profile picture' width={100} height={100} onClick={() => setProfileEdit(true)}/>
+                    <Image src={'/placeholder_person.jpg'} alt='profile picture' width={100} height={100} />
                     <Stack spacing={6}>
-                        <Typography variant='h4' onClick={() => setProfileEdit(true)} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer' }}> 
-                            Placeholder Username 
-                        </Typography>
-                        <Typography fontSize={16} onClick={() => setProfileEdit(true)} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer', maxWidth: '600px' }}> 
+                        <Typography variant='h4' sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer' }}> Placeholder Username </Typography>
+                        <Typography fontSize={16} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer', maxWidth: '600px' }}> 
                             Write a quick bio here!
                         </Typography>
                     </Stack>
@@ -278,12 +278,12 @@ export default function Dashboard() {
                             }
                             {content !== null &&
                                 content.map((c, index) => {
-                                    const name = idNameMap.get(ids[index]);
+                                    const name = nameMap.get(ids[index]);
                                     return(
                                         <Box key={index}>
                                             <ContentPlayer 
                                                 key={index} 
-                                                contentName={name ? name : `Story ${index}`} 
+                                                contentName={`Story ${name ? name : index+1}`} 
                                                 index={index} 
                                                 storyId={ids[index]} 
                                                 onDelete={() => contentDelete(index)} 
@@ -297,13 +297,12 @@ export default function Dashboard() {
                     </Box>
                     </Grid> 
                 </Grid>
-                <ProfileUpdater open={profileEdit} onClose={() => setProfileEdit(false)}/>
                 <Dialog
                     fullScreen
                     open={popupOpen}
                     onClose={() => handleClose(false)}
                     TransitionComponent={Transition}
-                    sx={{backgroundColor: 'transparent'}}
+                    sx={{backgroundColor: 'transparent' }}
                 >
                     <AppBar sx={{ position: 'relative' }}>
                     <Toolbar sx={{ backgroundColor: 'darkgrey' }}>
