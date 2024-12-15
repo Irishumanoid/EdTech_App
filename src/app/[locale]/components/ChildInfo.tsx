@@ -16,10 +16,11 @@ import { IconButton } from '@mui/material';
 
 interface ChildInfoProps {
     index: number;
+    isMain: boolean;
     onDelete: (index: number) => void;
 }
 
-export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
+export const ChildInfo = ({ index, isMain, onDelete }: ChildInfoProps) => {
     const [name, setName] = useState('');
     const [pronoun, setPronoun] = useState('');
     const [prefs, setPrefs] = useState('');
@@ -42,11 +43,11 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
     }
 
     return (
-        <div>
+        <Box paddingLeft={isMain ? 0 : 8}>
             <Box sx={{ '& > :not(style)': { m: 1 } }} id={`child-info-${index}`}>
                 <TextField
                     id="input-with-icon-textfield"
-                    label={index === 0 ? "Child name" : `Friend ${index} name`}
+                    label={index === 0 ? "Child name" : `Person ${index} name`}
                     sx={{ position: 'relative', top: '30px', backgroundColor: 'var(--background)' }}
                     slotProps={{
                     input: {
@@ -77,21 +78,23 @@ export const ChildInfo = ({ index, onDelete }: ChildInfoProps) => {
                     variant="standard"
                     onChange={(e) => setPrefs(e.target.value)}
                     sx = {{
-                        width:'50%',
+                        width:'500px',
                         position: 'relative', 
                         top: '20px',
                         backgroundColor: 'var(--background)',
                         textEmphasisColor: 'var(--button-text)',
                     }}
                 />   
-                <IconButton 
-                    color="primary" 
-                    aria-label="delete" 
-                    onClick={() => deleteUser()}
-                    sx={{position: 'relative', top: '50px'}}>
-                    <DeleteForeverIcon sx={{color: 'red', fontSize: 30}}/>
-                </IconButton>
+                {!isMain &&
+                    <IconButton 
+                        color="primary" 
+                        aria-label="delete" 
+                        onClick={() => deleteUser()}
+                        sx={{position: 'relative', top: '50px'}}>
+                            <DeleteForeverIcon sx={{color: 'red', fontSize: 30}}/>
+                    </IconButton>
+                }
             </Box>
-        </div>
+        </Box>
     );
 }

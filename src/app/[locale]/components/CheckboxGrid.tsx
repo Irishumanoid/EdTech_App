@@ -5,8 +5,8 @@ import { addPlot, removePlot } from '../../store/features/userStorySlice';
 import { useState } from 'react';
 
 interface CheckboxGridProps {
-    numCols: number,
-    entries: string[],
+    numCols: number;
+    entries: string[];
 }
 
 export const CheckboxGrid = ({ numCols, entries }: CheckboxGridProps) => {

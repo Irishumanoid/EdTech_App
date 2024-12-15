@@ -23,7 +23,7 @@ const minChoices = [1, 2, 5, 10];
 export default function Home() {
     const dispatch = useAppDispatch();
     const user = useAppSelector((state) => state.user);
-    const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} onDelete={() => userDelete(0)}/>]);
+    const [inputList, setInputList] = useState([<ChildInfo index={0} key={0} isMain={true} onDelete={() => userDelete(0)}/>]);
     const [minsStates, setMinsStates] = useState(new Map(Array.from(minChoices).map(choice => [choice, false])));
     const [ageRange, setAgeRange] = useState([0, 18]);
     const [isAudio, setIsAudio] = useState(false);
@@ -56,7 +56,7 @@ export default function Home() {
         const newIndex = inputList.length;
         setInputList((prevList) => [
             ...prevList,
-            <ChildInfo key={newIndex} index={newIndex} onDelete={() => userDelete(newIndex)} />
+            <ChildInfo key={newIndex} index={newIndex} isMain={false} onDelete={() => userDelete(newIndex)}/>
         ]);
     }
 
@@ -71,7 +71,6 @@ export default function Home() {
 
     const handleMinsChange = (input: number) => {
         dispatch(setNumMins(input));
-        const keys = minsStates.keys();
         const newMap = new Map(Array.from(minChoices).map(choice => [choice, choice === input]));
         setMinsStates(newMap);
     }
@@ -199,10 +198,13 @@ export default function Home() {
                     }}>
                     {activeStep === 0 &&
                         <Box>
+                            <Stack direction='row'>
+
+                            </Stack>
                             {inputList}
                             <IconButton color="primary" aria-label="add" onClick={() => genButtonClick()} sx={{ fontSize: 20 }}>
                                 <AddIcon />
-                                New User
+                                Important Person
                             </IconButton>
                         </Box>
                     }
