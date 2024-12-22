@@ -75,6 +75,66 @@ export const verifyLogin = async (email: string, password: string) => {
     }
 }
 
+export const updateUser = async (userId: string, username?: string, bio?: string) => {
+    try {
+        client.connect();
+        const users = client.db('users').collection('registration_data');
+
+        let result;
+        if (username) {
+            const count = await users.countDocuments({ username });
+            if (count !== 0) {
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({ message: 'User with the same username already exists' })
+                };
+            }
+            result = await users.updateOne({_id: new ObjectId(userId)}, {$set: {username}});
+        } else if (bio) {
+            result = await users.updateOne({_id: new ObjectId(userId)}, {$set: {bio}});
+        }
+
+        if (result?.acknowledged) {
+            return {
+                statusCode: 200,
+                body: JSON.stringify({ message: `Successfully modified ${username ? username : bio}` })
+            };
+        }
+
+    return {
+        statusCode: 400,
+        body: JSON.stringify({ message: 'Error modifying user' })
+    };
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
+
+export const fetchUserData = async (userId: string, field: string) => {
+    try {
+        client.connect();
+        const stories = client.db('users').collection('registration_data');
+        const user = await stories.findOne({_id: new ObjectId(userId)});
+
+        if (user) {
+            const curField = field === 'username' ? user.username : user.bio;
+            if (curField) {
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify({message: 'Fetched user data', data: curField})
+                };
+            }
+        }
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ message: `Failed for fetch user data for ${field}` })
+        };
+    } catch (err) {
+        console.error('Error:', err);
+    }
+}
+
+
 export const addStory = async (text: string, uuid?: string) => {
     try {
         client.connect();

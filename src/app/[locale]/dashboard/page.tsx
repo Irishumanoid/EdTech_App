@@ -10,6 +10,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { ContentPlayer } from "../components/ContentPlayer";
 import { TransitionProps } from "@mui/material/transitions";
 import Home from "../home/page";
+import { ProfileUpdater } from "../components/ProfileUpdater";
 
 const theme = createTheme({
     typography: {
@@ -28,12 +29,14 @@ const Transition = forwardRef(function Transition(
 
 export default function Dashboard() {
     const [popupOpen, setPopupOpen] = useState(false);
+    const [profileEdit, setProfileEdit] = useState(false);
     const [ids, setIds] = useState(['']);
     const [nameMap, setNameMap] = useState(new Map<string, string>()); // maps ids to name
     const [content, setContent] = useState<AudioBuffer[] | null>(null);
     const [loading, setLoading] = useState(true);
-
-    
+    const [image, setImage] = useState(''); 
+    const [username, setUsername] = useState('');
+    const [bio, setBio] = useState('');
 
     useEffect(() => {
         const audioContext = new window.AudioContext();
@@ -45,6 +48,36 @@ export default function Dashboard() {
                 console.error('User ID not found in localStorage');
                 return;
             }
+
+            const userProfileResponse = await fetch('/api/profile', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json', 'userId': userId }
+            });
+
+            if (userProfileResponse.ok) {
+                const profilePic = await userProfileResponse.arrayBuffer();
+                if (profilePic) {
+                    const contentType = userProfileResponse.headers.get('Content-Type');
+                    if (contentType) {
+                        const blob = new Blob([profilePic], {type: contentType as string});
+                        const url = URL.createObjectURL(blob);
+                        setImage(url);
+                    } else {
+                        console.error('No content type for image specified');
+                    }
+                }
+
+                const bio = userProfileResponse.headers.get('bio');
+                const username = userProfileResponse.headers.get('username');
+                if (bio && bio !== '') {
+                    console.log(`bio is ${bio}`);
+                    setBio(bio);
+                }
+                if (username && username !== '') {
+                    setUsername(username);
+                }
+            }
+            
             const idsGetResponse = await fetch('/api/login', {
                 method: 'GET',
                 headers: { 'Content-Type': 'application/json', 'userId': userId }
@@ -123,10 +156,15 @@ export default function Dashboard() {
         if (content) {
             setContent(content.filter((_, i) => i !== index));
         }
+        const id = ids[index];
+        const newMap = nameMap;
+        newMap.delete(id);
+        setNameMap(newMap);
+
         try {
             const deleteResponse = await fetch('/api/generate', {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'uuid': `${localStorage.getItem('userId')}/${ids[index]}` }
+                headers: { 'Content-Type': 'application/json', 'uuid': `${localStorage.getItem('userId')}/${id}` }
             });
             if (deleteResponse.ok) {
                 if (ids) {
@@ -165,11 +203,19 @@ export default function Dashboard() {
                         marginBottom: '2rem', 
                     }}
                 >
-                    <Image src={'/placeholder_person.jpg'} alt='profile picture' width={100} height={100} />
+                    <Image 
+                        src={image !== null && image !== '' && image !== undefined ? image : '/placeholder_person.jpg'} 
+                        alt='profile picture' 
+                        width={100} 
+                        height={100} 
+                        style={{ objectFit: 'cover' }}
+                        onClick={() => setProfileEdit(true)}/>
                     <Stack spacing={6}>
-                        <Typography variant='h4' sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer' }}> Placeholder Username </Typography>
-                        <Typography fontSize={16} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer', maxWidth: '600px' }}> 
-                            Write a quick bio here!
+                        <Typography variant='h4' onClick={() => setProfileEdit(true)} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer' }}> 
+                            {username !== '' ? username : 'Placeholder Username'}
+                        </Typography>
+                        <Typography fontSize={16} onClick={() => setProfileEdit(true)} sx={{ position: 'absolute', left: '180px', top: '15px', cursor: 'pointer', maxWidth: '600px' }}> 
+                            {bio !== '' ? bio : 'Write a quick bio here!'}
                         </Typography>
                     </Stack>
                     <SettingsIcon sx={{ position: 'absolute', right: '15px', top: '15px', cursor: 'pointer', fontSize: '50px' }}/>
@@ -181,6 +227,7 @@ export default function Dashboard() {
                             justifyContent: 'flex-start', 
                             alignItems: 'flex-start',
                             backgroundColor: 'var(--background-secondary)',
+                            width: '250px',
                             height: '100%',
                             minHeight: '80vh',
                             padding: '2rem',
@@ -188,115 +235,111 @@ export default function Dashboard() {
                             borderRight: '1px solid #ccc',
                             borderColor: 'var(--secondary)',
                         }}>
-                            <ButtonGroup
-                                orientation="vertical"
-                                aria-label="Vertical button group"
-                                variant="text"
-                                size="large"
-                                sx={{width: '1000px'}}
-                            >
-                                <Button key='new-playlist'> Make new playlist </Button>
-                                <Button key='view-playlist'> View playlists </Button>
-                                <Button key='feedback'> Give us feedback </Button>
-                            </ButtonGroup>
+                            <Stack spacing={1}>
+                                <Button key='new-playlist' sx={{color: 'var(--primary)', fontSize: 16}}> Make new playlist </Button>
+                                <Button key='view-playlist' sx={{color: 'var(--primary)', fontSize: 16}}> View playlists </Button>
+                                <Button key='feedback' sx={{color: 'var(--primary)', fontSize: 16}}> Give us feedback </Button>
+                            </Stack>
                         </Box>
                     </Grid>
                     <Grid size={10}>
-                    <Box sx={{
-                        display: 'flex',
-                        justifyContent: 'center', 
-                        alignItems: 'flex-start',
-                        textAlign: 'left',
-                        backgroundColor: 'var(--background-secondary)',
-                        height: 'auto',
-                        minHeight: '80vh',
-                        padding: '2rem',
-                        borderRadius: '8px',
-                        flexDirection: 'column', 
-                    }}>
-                        <Stack spacing={0} sx={{ width: '100%' }}>
-                            <Stack spacing={1} sx={{ alignContent: 'left', width: '1000px' }}>
-                                <Typography variant='h4' sx={{ textAlign: 'left' }}> 
-                                    Welcome back, your playlists are ready 
-                                </Typography>
-                                <Typography fontSize={16} sx={{ textAlign: 'left' }}> 
-                                    Ready to immerse yourself in multilingual stories personalized to your preferences? 
-                                </Typography>
-                            </Stack>
-                            <Box sx={{
-                                display: 'flex',
-                                justifyContent: 'center', 
-                                alignItems: 'center',
-                                backgroundColor: 'var(--button)',
-                                width: '1000px',
-                                height: '120px',
-                                padding: '2rem',
-                                borderRadius: '8px',
-                                marginTop: '2rem', 
-                            }}>
-                                <Stack direction="row" spacing={65} alignItems='center'>
-                                    <Stack spacing={1}>
-                                        <Typography fontSize={30} sx={{color: 'black'}}>Story Maker</Typography>
-                                        <Typography fontSize={18} sx={{color: 'black'}}>Generate another masterpiece</Typography>
-                                    </Stack>
-                                    <Button size='small' sx={{backgroundColor: 'var(--selected)', height: '50px'}} onClick={() => handleClickOpen()}>Generate new</Button>
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'center', 
+                            alignItems: 'flex-start',
+                            textAlign: 'left',
+                            backgroundColor: 'var(--background-secondary)',
+                            height: 'auto',
+                            minHeight: '80vh',
+                            padding: '2rem',
+                            borderRadius: '8px',
+                            borderLeft: '2px solid #ccc',
+                            flexDirection: 'column', 
+                        }}>
+                            <Stack spacing={0} sx={{ width: '100%' }}>
+                                <Stack spacing={1} sx={{ alignContent: 'left', width: '1000px' }}>
+                                    <Typography variant='h4' sx={{ textAlign: 'left' }}> 
+                                        Welcome back, your playlists are ready 
+                                    </Typography>
+                                    <Typography fontSize={16} sx={{ textAlign: 'left' }}> 
+                                        Ready to immerse yourself in multilingual stories personalized to your preferences? 
+                                    </Typography>
                                 </Stack>
-                            </Box>
-                            <Typography variant='h4' paddingBottom='25px' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
-                                Your Stories 
-                            </Typography>
-                            {(content?.length === 0 || loading) &&
                                 <Box sx={{
                                     display: 'flex',
                                     justifyContent: 'center', 
                                     alignItems: 'center',
                                     backgroundColor: 'var(--button)',
                                     width: '1000px',
-                                    height: '150px',
+                                    height: '120px',
                                     padding: '2rem',
                                     borderRadius: '8px',
-                                    marginTop: '2rem',
+                                    marginTop: '2rem', 
                                 }}>
-                                    {loading? (
-                                        <Stack spacing={2} alignItems="center" justifyContent="center">
-                                            <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
-                                                Fetching your stories!
-                                            </Typography>
-                                            <CircularProgress size={40} />
+                                    <Stack direction="row" spacing={65} alignItems='center'>
+                                        <Stack spacing={1}>
+                                            <Typography fontSize={30} sx={{color: 'black'}}>Story Maker</Typography>
+                                            <Typography fontSize={18} sx={{color: 'black'}}>Generate another masterpiece</Typography>
                                         </Stack>
-                                        ) : (
-                                        <Stack spacing={2} alignItems="center" justifyContent="center">
-                                            <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
-                                                You don&apos;t have any stories yet.
-                                            </Typography>
-                                            <Typography fontSize={16} sx={{ textAlign: 'center', color: 'black' }}>
-                                                Click the generate button above to create your first personalized story!
-                                            </Typography>
-                                        </Stack>
-                                    )}
+                                        <Button size='small' sx={{backgroundColor: 'var(--selected)', height: '50px'}} onClick={() => handleClickOpen()}>Generate new</Button>
+                                    </Stack>
                                 </Box>
-                            }
-                            {content !== null &&
-                                content.map((c, index) => {
-                                    const name = nameMap.get(ids[index]);
-                                    return(
-                                        <Box key={index}>
-                                            <ContentPlayer 
-                                                key={index} 
-                                                contentName={`Story ${name ? name : index+1}`} 
-                                                index={index} 
-                                                storyId={ids[index]} 
-                                                onDelete={() => contentDelete(index)} 
-                                                audio={c}
-                                            />
-                                        </Box>
-                                    );
-                                })
-                            }
-                        </Stack>
-                    </Box>
+                                <Typography variant='h4' paddingBottom='25px' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
+                                    Your Stories 
+                                </Typography>
+                                {(content?.length === 0 || loading) &&
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'center', 
+                                        alignItems: 'center',
+                                        backgroundColor: 'var(--button)',
+                                        width: '1000px',
+                                        height: '150px',
+                                        padding: '2rem',
+                                        borderRadius: '8px',
+                                        marginTop: '2rem',
+                                    }}>
+                                        {loading? (
+                                            <Stack spacing={2} alignItems="center" justifyContent="center">
+                                                <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
+                                                    Fetching your stories!
+                                                </Typography>
+                                                <CircularProgress size={40} />
+                                            </Stack>
+                                            ) : (
+                                            <Stack spacing={2} alignItems="center" justifyContent="center">
+                                                <Typography fontSize={20} sx={{ textAlign: 'center', fontWeight: 900, color: 'black' }}>
+                                                    You don&apos;t have any stories yet.
+                                                </Typography>
+                                                <Typography fontSize={16} sx={{ textAlign: 'center', color: 'black' }}>
+                                                    Click the generate button above to create your first personalized story!
+                                                </Typography>
+                                            </Stack>
+                                        )}
+                                    </Box>
+                                }
+                                {content !== null &&
+                                    content.map((c, index) => {
+                                        const name = nameMap.get(ids[index]);
+                                        return(
+                                            <Box key={index}>
+                                                <ContentPlayer 
+                                                    key={index} 
+                                                    contentName={`Story ${name ? name : index+1}`} 
+                                                    index={index} 
+                                                    storyId={ids[index]} 
+                                                    onDelete={() => contentDelete(index)} 
+                                                    audio={c}
+                                                />
+                                            </Box>
+                                        );
+                                    })
+                                }
+                            </Stack>
+                        </Box>
                     </Grid> 
                 </Grid>
+                <ProfileUpdater open={profileEdit} onClose={() => setProfileEdit(false)}/>
                 <Dialog
                     fullScreen
                     open={popupOpen}
