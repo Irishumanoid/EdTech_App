@@ -7,7 +7,7 @@ import 'react-h5-audio-player/lib/styles.css';
 import { getBlobUrl } from "@/lib/utils";
 import Button from "./Button";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useState, useMemo, forwardRef } from "react";
+import { useState, useMemo, forwardRef, useEffect } from "react";
 import { downloadStory } from "@/lib/utils";
 import { TransitionProps } from "@mui/material/transitions";
 
@@ -16,7 +16,9 @@ interface ContentPlayerProps {
     audio: AudioBuffer,
     index: number,
     storyId: string,
+    playNow: boolean,
     onDelete: (index: number) => void,
+    onEnd: () => void,
 }
 
 const Transition = forwardRef(function Transition(
@@ -29,7 +31,7 @@ const Transition = forwardRef(function Transition(
 });
 
 //content name, duration, launch play button (if pressed, launch audio player, when pressed again, close audio player), share button
-export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: ContentPlayerProps) => {
+export const ContentPlayer = ({contentName, audio, index, storyId, playNow, onDelete, onEnd}: ContentPlayerProps) => {
     const [launchPlayer, setLaunchPlayer] = useState(false);
     const [story, setStory] = useState(['']);
     const [showTranscript, setShowTranscript] = useState(false);
@@ -41,6 +43,10 @@ export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: Co
     const minutes = Math.floor(duration / 60);
     const seconds = (duration - minutes * 60).toString().slice(0, 2);
     const audioSrc = useMemo(() => getBlobUrl(audio as AudioBuffer), [audio]);
+
+    useEffect(() => {
+        setLaunchPlayer(playNow);
+    }, [playNow]);
 
     const deleteStory = () => {
         onDelete(index);
@@ -122,7 +128,7 @@ export const ContentPlayer = ({contentName, audio, index, storyId, onDelete}: Co
                     </Stack>
                     {launchPlayer &&
                         <Box width='400px'>
-                            <AudioPlayer autoPlay src={audioSrc} style={{ backgroundColor: 'var(--selected)' }}/>
+                            <AudioPlayer autoPlay src={audioSrc} onEnded={() => onEnd()} style={{ backgroundColor: 'var(--selected)' }}/>
                         </Box>
                     }
                     <Stack direction='row' spacing={2} paddingLeft={launchPlayer ? '70px' : '220px'} alignItems='center' justifyContent='center'>

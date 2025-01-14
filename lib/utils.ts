@@ -110,12 +110,12 @@ export interface Flip {
   vertical: boolean;
 }
 
-export async function getCroppedImg(
+export const getCroppedImg = async (
   imageSrc: string,
   pixelCrop: PixelCrop,
   rotation: number = 0,
   flip: Flip = { horizontal: false, vertical: false }
-): Promise<string | null> {
+): Promise<string | null> => {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -183,4 +183,8 @@ export async function getCroppedImg(
       'image/jpeg'
     );
   });
+}
+
+export const randomNumber = (upperBound: number) => {
+  return Math.floor(Math.random() * upperBound);
 }

@@ -1,6 +1,8 @@
 'use client'
 
-import { AppBar, Box, Button, ButtonGroup, CircularProgress, Dialog, IconButton, Slide, Stack, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, CircularProgress, Dialog, IconButton, Slide, Stack, Toolbar, Typography } from "@mui/material";
+import ShuffleIcon from '@mui/icons-material/Shuffle';
+import SkipNextIcon from '@mui/icons-material/SkipNext';
 import Grid from '@mui/material/Grid2';
 import Image from 'next/image';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -11,6 +13,7 @@ import { ContentPlayer } from "../components/ContentPlayer";
 import { TransitionProps } from "@mui/material/transitions";
 import Home from "../home/page";
 import { ProfileUpdater } from "../components/ProfileUpdater";
+import { randomNumber } from "@/lib/utils";
 
 const theme = createTheme({
     typography: {
@@ -37,6 +40,8 @@ export default function Dashboard() {
     const [image, setImage] = useState(''); 
     const [username, setUsername] = useState('');
     const [bio, setBio] = useState('');
+    const [curPlaying, setCurPlaying] = useState(-1);
+    const [shuffle, setShuffle] = useState(false);
 
     useEffect(() => {
         const audioContext = new window.AudioContext();
@@ -141,6 +146,12 @@ export default function Dashboard() {
         fetchStories();
     }, []);
 
+    useEffect(() => {
+        if (shuffle) {
+            playNext();
+        }
+    }, [shuffle]);
+
     const handleClickOpen = () => {
         setPopupOpen(true);
     };
@@ -173,6 +184,14 @@ export default function Dashboard() {
             }
         } catch (error) {
             console.error(`failed to delete audio`, error);
+        }
+    }
+
+    //set state of launch player of given index to true (create new prop)
+    const playNext = () => {
+        if (content) {
+            const next = randomNumber(content.length);
+            setCurPlaying(next);
         }
     }
  
@@ -236,7 +255,6 @@ export default function Dashboard() {
                             borderColor: 'var(--secondary)',
                         }}>
                             <Stack spacing={1}>
-                                <Button key='new-playlist' sx={{color: 'var(--primary)', fontSize: 16}}> Make new playlist </Button>
                                 <Button key='view-playlist' sx={{color: 'var(--primary)', fontSize: 16}}> View playlists </Button>
                                 <Button key='feedback' sx={{color: 'var(--primary)', fontSize: 16}}> Give us feedback </Button>
                             </Stack>
@@ -276,7 +294,7 @@ export default function Dashboard() {
                                     borderRadius: '8px',
                                     marginTop: '2rem', 
                                 }}>
-                                    <Stack direction="row" spacing={65} alignItems='center'>
+                                    <Stack direction='row' spacing={65} alignItems='center'>
                                         <Stack spacing={1}>
                                             <Typography fontSize={30} sx={{color: 'black'}}>Story Maker</Typography>
                                             <Typography fontSize={18} sx={{color: 'black'}}>Generate another masterpiece</Typography>
@@ -284,9 +302,13 @@ export default function Dashboard() {
                                         <Button size='small' sx={{backgroundColor: 'var(--selected)', height: '50px'}} onClick={() => handleClickOpen()}>Generate new</Button>
                                     </Stack>
                                 </Box>
-                                <Typography variant='h4' paddingBottom='25px' sx={{ textAlign: 'left', marginTop: '2rem' }}> 
-                                    Your Stories 
-                                </Typography>
+                                <Stack direction='row' paddingTop='40px' paddingBottom='25px' alignItems='center' spacing={1}>
+                                    <Typography variant='h4' paddingRight='15px' sx={{ textAlign: 'left'}}> 
+                                        Your Stories 
+                                    </Typography>
+                                    <ShuffleIcon sx={{fontSize: '30pt'}} onClick={() => setShuffle(true)}/>
+                                    <SkipNextIcon sx={{fontSize: '30pt'}} onClick={() => playNext()}/>
+                                </Stack>
                                 {(content?.length === 0 || loading) &&
                                     <Box sx={{
                                         display: 'flex',
@@ -327,9 +349,11 @@ export default function Dashboard() {
                                                     key={index} 
                                                     contentName={`Story ${name ? name : index+1}`} 
                                                     index={index} 
-                                                    storyId={ids[index]} 
+                                                    storyId={ids[index]}
+                                                    playNow={curPlaying === index ? true : false} 
                                                     onDelete={() => contentDelete(index)} 
-                                                    audio={c}
+                                                    onEnd={() => shuffle && playNext()}
+                                                    audio={c}                                    
                                                 />
                                             </Box>
                                         );

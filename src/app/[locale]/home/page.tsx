@@ -330,6 +330,7 @@ export default function Home() {
                                         <MenuItem value="Mandarin">Mandarin</MenuItem>
                                         <MenuItem value="Spanish">Spanish</MenuItem>
                                         <MenuItem value="Russian">Russian</MenuItem>
+                                        <MenuItem value="Romanian">Romanian</MenuItem>
                                         </Select>
                                     </FormControl>
                                     <FormControl variant="filled" sx={{ m: 1, minWidth: 100, backgroundColor: 'var(--background)' }}>
