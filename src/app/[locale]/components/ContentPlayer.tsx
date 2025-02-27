@@ -7,7 +7,7 @@ import 'react-h5-audio-player/lib/styles.css';
 import { getBlobUrl } from "@/lib/utils";
 import Button from "./Button";
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import { useState, useMemo, forwardRef, useEffect } from "react";
+import { useState, useMemo, forwardRef, useEffect, useCallback } from "react";
 import { downloadStory } from "@/lib/utils";
 import { TransitionProps } from "@mui/material/transitions";
 
@@ -52,7 +52,7 @@ export const ContentPlayer = ({contentName, audio, index, storyId, playNow, onDe
         onDelete(index);
     }
 
-    const fetchTranscript = async () => {
+    const fetchTranscript = useCallback(async () => {
         setShowTranscript(!showTranscript);
         if (story.length === 1) {
             const textGetResponse = await fetch('/api/generate', {
@@ -71,7 +71,7 @@ export const ContentPlayer = ({contentName, audio, index, storyId, playNow, onDe
                 }
             }
         }
-    }
+    }, [showTranscript, storyId]);
 
     const handleClickOpen = () => {
         setPopupOpen(true);

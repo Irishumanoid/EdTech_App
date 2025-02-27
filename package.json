@@ -29,6 +29,7 @@
     "@radix-ui/react-tabs": "^1.0.4",
     "@reduxjs/toolkit": "^2.3.0",
     "@toolpad/core": "^0.10.0",
+    "babel-plugin-react-compiler": "^19.0.0-beta-e1e972c-20250221",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "class-variance-authority": "^0.7.0",
